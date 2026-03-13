@@ -36,9 +36,9 @@ export class TerrainRenderer {
   update(): void {
     const cameraPos = this.camera.position;
 
-    // 1. Frustum planes 계산
-    const transformMatrix = this.scene.getTransformMatrix();
-    const frustumPlanes = Frustum.GetPlanes(transformMatrix);
+    // 1. Frustum planes 계산 (scene.render() 전에도 올바른 matrix 보장)
+    this.scene.updateTransformMatrix();
+    const frustumPlanes = Frustum.GetPlanes(this.scene.getTransformMatrix());
 
     // 2. Quadtree traversal → visible tile set 수집
     const visibleKeys = new Set<string>();

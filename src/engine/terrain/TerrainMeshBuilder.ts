@@ -1,5 +1,7 @@
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TileCoord } from './TerrainTile';
 import { tileKey } from './TerrainTile';
@@ -114,6 +116,11 @@ export function buildTerrainMesh(
   const mesh = new Mesh(`tile_${tileKey(coord)}`, scene);
   vertexData.applyToMesh(mesh, false);
   mesh.isPickable = false;
+
+  const mat = new StandardMaterial(`mat_${tileKey(coord)}`, scene);
+  mat.diffuseColor = new Color3(0.6, 0.55, 0.45); // 흙/모래 색
+  mat.backFaceCulling = false; // winding 문제 방지
+  mesh.material = mat;
 
   return mesh;
 }
