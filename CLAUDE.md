@@ -111,15 +111,15 @@ npm run build    # 프로덕션 빌드
 > 세션 재개 시 이 체크리스트를 기준으로 다음 Step을 파악한다.
 > Step 완료 시 Claude가 즉시 업데이트한다.
 
-- [ ] Step 1 — 프로젝트 셋업 (`package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`)
-- [ ] Step 2 — 공통 타입 정의 (`TerrainTile.ts`)
-- [ ] Step 3 — TilingScheme + LocalGridTiling
-- [ ] Step 4 — TerrainMeshBuilder (heightmap → mesh)
-- [ ] Step 5 — LODSelector
-- [ ] Step 6 — CameraController
-- [ ] Step 7 — TerrainTileManager
-- [ ] Step 8 — TerrainRenderer (Quadtree Traversal)
-- [ ] Step 9 — main.ts 진입점 + npm install + 동작 확인
+- [x] Step 1 — 프로젝트 셋업 (`package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `.gitignore`, `git init`)
+- [x] Step 2 — 공통 타입 정의 (`TerrainTile.ts`)
+- [x] Step 3 — TilingScheme + LocalGridTiling
+- [x] Step 4 — TerrainMeshBuilder (heightmap → mesh)
+- [x] Step 5 — LODSelector
+- [x] Step 6 — CameraController
+- [x] Step 7 — TerrainTileManager
+- [x] Step 8 — TerrainRenderer (Quadtree Traversal)
+- [x] Step 9 — main.ts 진입점 + npm install + 동작 확인
 
 ---
 
