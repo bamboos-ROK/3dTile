@@ -1,14 +1,13 @@
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import type { Scene } from '@babylonjs/core/scene';
-import type { TileCoord } from './TerrainTile';
-import { tileKey } from './TerrainTile';
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import type { Scene } from "@babylonjs/core/scene";
+import type { TileCoord } from "./TerrainTile";
+import { tileKey } from "./TerrainTile";
 
 const VERTEX_RESOLUTION = 32; // 타일당 32×32 vertices
-const HEIGHTMAP_SIZE = 256;
-const HEIGHT_SCALE = 50;
+const HEIGHT_SCALE = 480;
 
 export interface HeightmapData {
   pixels: Uint8ClampedArray;
@@ -16,17 +15,41 @@ export interface HeightmapData {
   height: number;
 }
 
-/** 256×256 heightmap PNG를 로드하여 픽셀 데이터 반환 */
+/** heightmap PNG를 로드하여 픽셀 데이터 반환 */
 export async function loadHeightmap(url: string): Promise<HeightmapData> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+      // 디버그: R채널 픽셀값 통계
+      const data = imageData.data;
+      let minVal = 255,
+        maxVal = 0,
+        sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const v = data[i]; // R 채널
+        if (v < minVal) minVal = v;
+        if (v > maxVal) maxVal = v;
+        sum += v;
+      }
+      const avg = sum / (data.length / 4);
+      console.log(`[Heightmap] size: ${img.width}×${img.height}`);
+      console.log(
+        `[Heightmap] R-channel  min=${minVal}  max=${maxVal}  avg=${avg.toFixed(1)}`,
+      );
+      const w = img.width,
+        h = img.height;
+      const s = (x: number, y: number): number => data[(y * w + x) * 4];
+      console.log(
+        `[Heightmap] corners — TL:${s(0, 0)} TR:${s(w - 1, 0)} BL:${s(0, h - 1)} BR:${s(w - 1, h - 1)} Center:${s(Math.floor(w / 2), Math.floor(h / 2))}`,
+      );
+
       resolve({ pixels: imageData.data, width: img.width, height: img.height });
     };
     img.onerror = () => reject(new Error(`Failed to load heightmap: ${url}`));
@@ -35,11 +58,7 @@ export async function loadHeightmap(url: string): Promise<HeightmapData> {
 }
 
 /** heightmap 픽셀 좌표에서 높이값 샘플링 (0~HEIGHT_SCALE) */
-function sampleHeight(
-  hm: HeightmapData,
-  px: number,
-  py: number
-): number {
+function sampleHeight(hm: HeightmapData, px: number, py: number): number {
   const x = Math.min(Math.max(Math.floor(px), 0), hm.width - 1);
   const y = Math.min(Math.max(Math.floor(py), 0), hm.height - 1);
   const idx = (y * hm.width + x) * 4; // RGBA
@@ -50,7 +69,7 @@ function sampleHeight(
  * 타일 좌표 기반으로 32×32 grid terrain mesh 생성
  *
  * heightmap UV 매핑:
- *   tileSize = 256 / 2^level
+ *   tileSize = hm.width / 2^level
  *   샘플 시작: (tileX * tileSize, tileY * tileSize)
  */
 export function buildTerrainMesh(
@@ -59,13 +78,13 @@ export function buildTerrainMesh(
   hm: HeightmapData,
   worldMinX: number,
   worldMinZ: number,
-  worldTileSize: number
+  worldTileSize: number,
 ): Mesh {
   const n = VERTEX_RESOLUTION; // 32
   const cells = n - 1; // 31
 
-  // heightmap 샘플 영역 계산
-  const hmTileSize = HEIGHTMAP_SIZE / Math.pow(2, coord.level);
+  // heightmap 샘플 영역 계산 (실제 이미지 크기 기준)
+  const hmTileSize = hm.width / Math.pow(2, coord.level);
   const hmStartX = coord.tileX * hmTileSize;
   const hmStartY = coord.tileY * hmTileSize;
 
@@ -99,10 +118,10 @@ export function buildTerrainMesh(
       const tr = tl + 1;
       const bl = tl + n;
       const br = bl + 1;
-      // 삼각형 1
-      indices.push(tl, bl, tr);
+      // 삼각형 1 (CCW from above = front face, normals UP)
+      indices.push(tl, tr, bl);
       // 삼각형 2
-      indices.push(tr, bl, br);
+      indices.push(tr, br, bl);
     }
   }
 
@@ -117,9 +136,14 @@ export function buildTerrainMesh(
   vertexData.applyToMesh(mesh, false);
   mesh.isPickable = false;
 
-  const mat = new StandardMaterial(`mat_${tileKey(coord)}`, scene);
-  mat.diffuseColor = new Color3(0.6, 0.55, 0.45); // 흙/모래 색
-  mat.backFaceCulling = false; // winding 문제 방지
+  let mat = scene.getMaterialByName("terrain") as StandardMaterial | null;
+  if (!mat) {
+    mat = new StandardMaterial("terrain", scene);
+    mat.diffuseColor = new Color3(0.6, 0.55, 0.45); // 흙/모래 색
+    mat.specularColor = new Color3(0.1, 0.1, 0.1);
+    mat.specularPower = 64;
+  }
+
   mesh.material = mat;
 
   return mesh;

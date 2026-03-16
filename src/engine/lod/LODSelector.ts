@@ -25,8 +25,11 @@ export class LODSelector {
    * 해당 타일에 적합한 LOD level 반환 (0~maxLevel)
    */
   selectLevel(cameraPos: Vector3, bounds: TileBounds): number {
-    const dx = cameraPos.x - bounds.centerX;
-    const dz = cameraPos.z - bounds.centerZ;
+    // 타일 경계 내에서 카메라에 가장 가까운 점까지의 거리 (nearest boundary point)
+    const clampedX = Math.max(bounds.minX, Math.min(cameraPos.x, bounds.maxX));
+    const clampedZ = Math.max(bounds.minZ, Math.min(cameraPos.z, bounds.maxZ));
+    const dx = cameraPos.x - clampedX;
+    const dz = cameraPos.z - clampedZ;
     const distance = Math.sqrt(dx * dx + dz * dz);
 
     for (let level = 0; level < this.maxLevel; level++) {
