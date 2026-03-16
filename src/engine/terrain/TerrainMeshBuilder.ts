@@ -4,10 +4,7 @@ import type { StandardMaterial } from "@babylonjs/core/Materials/standardMateria
 import type { Scene } from "@babylonjs/core/scene";
 import type { TileCoord } from "./TerrainTile";
 import { tileKey } from "./TerrainTile";
-import { HEIGHT_SCALE, TERRAIN_SIZE } from "../constants";
-
-const VERTEX_RESOLUTION = 32; // 타일당 32×32 vertices
-const PIXEL_WORLD_SIZE = TERRAIN_SIZE / 256; // = 2.0 (1픽셀 = 2 world units)
+import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION, PIXEL_WORLD_SIZE } from "../constants";
 
 export interface HeightmapData {
   pixels: Uint8ClampedArray;

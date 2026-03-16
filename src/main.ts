@@ -63,6 +63,10 @@ async function main() {
   });
 
   window.addEventListener('resize', () => engine.resize());
+  window.addEventListener('beforeunload', () => {
+    camera.dispose();
+    engine.dispose();
+  });
 }
 
 main().catch(console.error);

@@ -4,7 +4,7 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Plane } from '@babylonjs/core/Maths/math.plane';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TileCoord } from '../terrain/TerrainTile';
-import { tileKey } from '../terrain/TerrainTile';
+import { tileKey, parseTileKey } from '../terrain/TerrainTile';
 import type { TerrainTileManager } from '../terrain/TerrainTileManager';
 import type { LODSelector } from '../lod/LODSelector';
 import type { TilingScheme } from '../tiling/TilingScheme';
@@ -21,6 +21,7 @@ export class TerrainRenderer {
   private readonly lodSelector: LODSelector;
   private readonly tileManager: TerrainTileManager;
   private readonly camera: CameraController;
+  private readonly bbCache = new Map<string, BoundingBox>();
 
   constructor(
     scene: Scene,
@@ -62,8 +63,7 @@ export class TerrainRenderer {
     const cachedKeys = this.tileManager.getCachedKeys();
     for (const key of cachedKeys) {
       if (!visibleKeys.has(key)) {
-        const [tileX, tileY, level] = key.split('_').map(Number);
-        this.tileManager.dispose({ tileX, tileY, level });
+        this.tileManager.dispose(parseTileKey(key));
       }
     }
 
@@ -88,10 +88,15 @@ export class TerrainRenderer {
   ): void {
     const bounds = this.tiling.tileBoundsToWorld(coord);
 
-    const bb = new BoundingBox(
-      new Vector3(bounds.minX, 0, bounds.minZ),
-      new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
-    );
+    const key = tileKey(coord);
+    let bb = this.bbCache.get(key);
+    if (!bb) {
+      bb = new BoundingBox(
+        new Vector3(bounds.minX, 0, bounds.minZ),
+        new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
+      );
+      this.bbCache.set(key, bb);
+    }
     if (!bb.isInFrustum(frustumPlanes)) return;
 
     const isSufficient =

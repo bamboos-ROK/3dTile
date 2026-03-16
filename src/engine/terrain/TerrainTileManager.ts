@@ -1,12 +1,9 @@
-import { BoundingBox } from '@babylonjs/core/Culling/boundingBox';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { TerrainTile, TileState, tileKey } from './TerrainTile';
 import type { TileCoord } from './TerrainTile';
 import type { HeightmapData } from './TerrainMeshBuilder';
 import { buildTerrainMesh } from './TerrainMeshBuilder';
-import { HEIGHT_SCALE } from '../constants';
 import type { TilingScheme } from '../tiling/TilingScheme';
 
 export class TerrainTileManager {
@@ -31,7 +28,6 @@ export class TerrainTileManager {
     }
 
     const tile = new TerrainTile(coord);
-    tile.state = TileState.Loading;
     this.cache.set(key, tile);
 
     const bounds = this.tiling.tileBoundsToWorld(coord);
@@ -43,12 +39,6 @@ export class TerrainTileManager {
       bounds.minZ,
       bounds.size,
       this.material,
-    );
-
-    // AABB bounding box 설정
-    tile.boundingBox = new BoundingBox(
-      new Vector3(bounds.minX, 0, bounds.minZ),
-      new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
     );
 
     tile.mesh = mesh;
