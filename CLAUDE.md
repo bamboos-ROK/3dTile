@@ -192,5 +192,6 @@ ls -R src/
 | 08 | `08_uv-offset-bugfix.md` | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제) |
 | 09 | `09_tile-seam-fix.md` | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함) |
 | 10 | `10_refactor-code-review.md` | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등) |
+| 11 | `11_lod-sse.md` | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=200 확정) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

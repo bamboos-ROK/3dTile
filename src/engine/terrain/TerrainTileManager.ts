@@ -83,7 +83,4 @@ export class TerrainTileManager {
     return new Set(this.cache.keys());
   }
 
-  get tileCount(): number {
-    return this.cache.size;
-  }
 }

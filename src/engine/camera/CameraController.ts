@@ -90,6 +90,10 @@ export class CameraController {
     return this.camera.position;
   }
 
+  get target(): Vector3 {
+    return this.camera.target;
+  }
+
   dispose(): void {
     this.scene.onBeforeRenderObservable.remove(this.renderObserver);
     window.removeEventListener("keydown", this.keydownHandler);

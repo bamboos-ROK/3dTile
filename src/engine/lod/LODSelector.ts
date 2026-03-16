@@ -1,62 +1,46 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TileBounds } from "../tiling/TilingScheme";
-import { HEIGHT_SCALE, MAX_LOD_LEVEL } from "../constants";
+import { HEIGHT_SCALE } from "../constants";
 
 /**
- * Camera distance 기반 LOD 레벨 선택
+ * Screen-Space Error(SSE) 기반 LOD 레벨 선택
  *
- * LOD 전환 임계값 (camera distance):
- *   Level 0 → 1: 400
- *   Level 1 → 2: 200
- *   Level 2 → 3: 100
- *   Level 3 → 4: 50
+ * screenError = (geometricError × projFactor) / distance
+ * screenError < pixelThreshold → 현재 LOD로 충분 (세분화 불필요)
  *
- * 카메라가 가까울수록 더 높은 level(세밀한 타일)로 전환
+ * projFactor = screenHeight / (2 × tan(fov / 2))
+ * geometricError = bounds.size / 2  (타일 크기의 절반으로 근사)
  */
-const LOD_THRESHOLDS = [400, 200, 100, 50] as const;
-
 export class LODSelector {
-  private readonly maxLevel: number;
-  private readonly terrainMaxHeight: number;
+  private readonly pixelThreshold: number;
 
-  constructor(maxLevel = MAX_LOD_LEVEL, terrainMaxHeight = HEIGHT_SCALE) {
-    this.maxLevel = maxLevel;
-    this.terrainMaxHeight = terrainMaxHeight;
+  constructor(pixelThreshold = 200) {
+    this.pixelThreshold = pixelThreshold;
   }
 
   /**
-   * 타일의 world 경계와 카메라 위치를 기반으로
-   * 해당 타일에 적합한 LOD level 반환 (0~maxLevel)
+   * 현재 타일의 level이 SSE 기준으로 충분한지 판단
+   * true  → 이 타일을 그대로 렌더링
+   * false → 자식 타일로 세분화 필요
    */
-  selectLevel(cameraPos: Vector3, bounds: TileBounds): number {
-    // 타일 3D 경계박스까지의 실제 최단 거리
+  isSufficientDetail(
+    cameraPos: Vector3,
+    bounds: TileBounds,
+    projFactor: number,
+  ): boolean {
     const clampedX = Math.max(bounds.minX, Math.min(cameraPos.x, bounds.maxX));
     const clampedZ = Math.max(bounds.minZ, Math.min(cameraPos.z, bounds.maxZ));
-    const clampedY = Math.max(0, Math.min(cameraPos.y, this.terrainMaxHeight));
+    const clampedY = Math.max(0, Math.min(cameraPos.y, HEIGHT_SCALE));
     const dx = cameraPos.x - clampedX;
     const dz = cameraPos.z - clampedZ;
     const dy = cameraPos.y - clampedY;
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    for (let level = 0; level < LOD_THRESHOLDS.length; level++) {
-      if (distance > LOD_THRESHOLDS[level]) {
-        return level;
-      }
-    }
-    return this.maxLevel;
-  }
+    // 카메라가 타일 AABB 내부: 항상 세분화
+    if (distance < 1e-6) return false;
 
-  /**
-   * 현재 타일의 level이 카메라 거리 기준으로 충분한지 판단
-   * true → 이 타일을 그대로 렌더링
-   * false → 자식 타일로 세분화 필요
-   */
-  isSufficientDetail(
-    currentLevel: number,
-    cameraPos: Vector3,
-    bounds: TileBounds,
-  ): boolean {
-    const targetLevel = this.selectLevel(cameraPos, bounds);
-    return currentLevel >= targetLevel;
+    const geometricError = bounds.size / 2;
+    const screenError = (geometricError * projFactor) / distance;
+    return screenError < this.pixelThreshold;
   }
 }

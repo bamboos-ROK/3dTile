@@ -40,6 +40,10 @@ export class TerrainRenderer {
   update(): void {
     const cameraPos = this.camera.position;
 
+    // SSE projFactor: 화면 높이 / (2 × tan(fov / 2))
+    const screenHeight = this.scene.getEngine().getRenderHeight();
+    const projFactor = screenHeight / (2 * Math.tan(this.camera.camera.fov / 2));
+
     // 1. Frustum planes 계산 (scene.render() 전에도 올바른 matrix 보장)
     this.scene.updateTransformMatrix();
     const frustumPlanes = Frustum.GetPlanes(this.scene.getTransformMatrix());
@@ -47,7 +51,7 @@ export class TerrainRenderer {
     // 2. Quadtree traversal → visible tile set 수집
     const visibleKeys = new Set<string>();
     const visibleCoords: TileCoord[] = [];
-    this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords);
+    this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor);
 
     // 3. 새로 필요한 타일 생성
     for (const coord of visibleCoords) {
@@ -70,7 +74,7 @@ export class TerrainRenderer {
   /**
    * Quadtree 재귀 traversal
    *
-   * - 현재 타일의 LOD가 충분하면 → visible set에 추가
+   * - 현재 타일의 SSE가 충분하면 → visible set에 추가
    * - 더 세밀해야 하면 → 4개 자식 타일로 재귀
    * - 최대 레벨이면 → 강제로 visible set에 추가
    */
@@ -79,7 +83,8 @@ export class TerrainRenderer {
     cameraPos: Vector3,
     frustumPlanes: Plane[],
     visibleKeys: Set<string>,
-    visibleCoords: TileCoord[]
+    visibleCoords: TileCoord[],
+    projFactor: number
   ): void {
     const bounds = this.tiling.tileBoundsToWorld(coord);
 
@@ -91,14 +96,14 @@ export class TerrainRenderer {
 
     const isSufficient =
       this.tiling.isMaxLevel(coord) ||
-      this.lodSelector.isSufficientDetail(coord.level, cameraPos, bounds);
+      this.lodSelector.isSufficientDetail(cameraPos, bounds, projFactor);
 
     if (isSufficient) {
       visibleKeys.add(tileKey(coord));
       visibleCoords.push(coord);
     } else {
       for (const child of this.tiling.getChildren(coord)) {
-        this.traverse(child, cameraPos, frustumPlanes, visibleKeys, visibleCoords);
+        this.traverse(child, cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor);
       }
     }
   }
