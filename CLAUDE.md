@@ -139,6 +139,7 @@ npm run build    # 프로덕션 빌드
 - [x] Step 7 — TerrainTileManager
 - [x] Step 8 — TerrainRenderer (Quadtree Traversal)
 - [x] Step 9 — main.ts 진입점 + npm install + 동작 확인
+- [x] Step 10 — 타일 seam 수정 (Heightmap 법선 + Skirt geometry)
 
 ---
 
@@ -187,5 +188,8 @@ ls -R src/
 | 04 | `04_lod-camera-bugfix.md` | LOD 기준점 버그 수정 (camera.position → camera.target) |
 | 05 | `05_wheel-lod-bugfix.md` | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling) |
 | 06 | `06_diffuse-texture.md` | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거) |
+| 07 | `07_rts-camera.md` | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용) |
+| 08 | `08_uv-offset-bugfix.md` | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제) |
+| 09 | `09_tile-seam-fix.md` | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

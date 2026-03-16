@@ -10,6 +10,7 @@ import { tileKey } from "./TerrainTile";
 const VERTEX_RESOLUTION = 32; // 타일당 32×32 vertices
 const HEIGHT_SCALE = 480;
 const TERRAIN_SIZE = 512; // 전체 지형 world 크기
+const PIXEL_WORLD_SIZE = TERRAIN_SIZE / 256; // = 2.0 (1픽셀 = 2 world units)
 
 export interface HeightmapData {
   pixels: Uint8ClampedArray;
@@ -67,6 +68,25 @@ function sampleHeight(hm: HeightmapData, px: number, py: number): number {
   return (hm.pixels[idx] / 255) * HEIGHT_SCALE;
 }
 
+/** heightmap 픽셀 좌표에서 전역 법선 계산 (중앙차분법) */
+function computeHeightmapNormal(
+  hm: HeightmapData,
+  px: number,
+  py: number,
+): [number, number, number] {
+  const hL = sampleHeight(hm, px - 1, py);
+  const hR = sampleHeight(hm, px + 1, py);
+  const hD = sampleHeight(hm, px, py - 1);
+  const hU = sampleHeight(hm, px, py + 1);
+  const dydx = (hR - hL) / (2 * PIXEL_WORLD_SIZE);
+  const dydz = (hU - hD) / (2 * PIXEL_WORLD_SIZE);
+  const nx = -dydx,
+    ny = 1.0,
+    nz = -dydz;
+  const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+  return [nx / len, ny / len, nz / len];
+}
+
 /**
  * 타일 좌표 기반으로 32×32 grid terrain mesh 생성
  *
@@ -106,10 +126,11 @@ export function buildTerrainMesh(
       const px = hmStartX + (col / cells) * hmTileSize;
       const py = hmStartY + (row / cells) * hmTileSize;
       const wy = sampleHeight(hm, px, py);
+      const [nx, ny, nz] = computeHeightmapNormal(hm, px, py);
 
       positions.push(wx, wy, wz);
-      normals.push(0, 1, 0); // 임시 법선, computeNormals로 재계산
-      uvs.push(wz / TERRAIN_SIZE, 1.0 - wx / TERRAIN_SIZE);
+      normals.push(nx, ny, nz);
+      uvs.push((wz + TERRAIN_SIZE / 2) / TERRAIN_SIZE, 1.0 - (wx + TERRAIN_SIZE / 2) / TERRAIN_SIZE);
     }
   }
 
@@ -127,11 +148,58 @@ export function buildTerrainMesh(
     }
   }
 
+  // skirt: 4변에 아래로 내려가는 수직 geometry 추가 → LOD 전환 경계 틈 은폐
+  // 깊이는 버텍스별 heightmap 주변 1픽셀 최대 높이 변화량으로 계산 → 틈 커버 + 지형 아래 노출 최소화
+  const skirtEdges = [
+    Array.from({ length: n }, (_, i) => i), // North (row=0)
+    Array.from({ length: n }, (_, i) => (n - 1) * n + i), // South (row=n-1)
+    Array.from({ length: n }, (_, i) => i * n), // West  (col=0)
+    Array.from({ length: n }, (_, i) => i * n + (n - 1)), // East  (col=n-1)
+  ];
+  for (let edgeIdx = 0; edgeIdx < skirtEdges.length; edgeIdx++) {
+    const edgeIndices = skirtEdges[edgeIdx];
+    const reversed = edgeIdx === 1 || edgeIdx === 2; // South, West는 법선이 안쪽 → 역순 와인딩
+    const skirtBase = positions.length / 3;
+    for (let i = 0; i < edgeIndices.length; i++) {
+      const vi = edgeIndices[i];
+      const col = vi % n;
+      const row = Math.floor(vi / n);
+      const px = hmStartX + (col / cells) * hmTileSize;
+      const py = hmStartY + (row / cells) * hmTileSize;
+      const h = sampleHeight(hm, px, py);
+      const depth = Math.max(
+        Math.abs(sampleHeight(hm, px + 1, py) - h),
+        Math.abs(sampleHeight(hm, px - 1, py) - h),
+        Math.abs(sampleHeight(hm, px, py + 1) - h),
+        Math.abs(sampleHeight(hm, px, py - 1) - h),
+      ) + 2;
+      positions.push(
+        positions[vi * 3],
+        positions[vi * 3 + 1] - depth,
+        positions[vi * 3 + 2],
+      );
+      normals.push(normals[vi * 3], normals[vi * 3 + 1], normals[vi * 3 + 2]);
+      uvs.push(uvs[vi * 2], uvs[vi * 2 + 1]);
+    }
+    for (let i = 0; i < n - 1; i++) {
+      const topA = edgeIndices[i],
+        topB = edgeIndices[i + 1];
+      const botA = skirtBase + i,
+        botB = skirtBase + i + 1;
+      if (reversed) {
+        indices.push(topA, botA, topB);
+        indices.push(topB, botA, botB);
+      } else {
+        indices.push(topA, topB, botA);
+        indices.push(topB, botB, botA);
+      }
+    }
+  }
+
   const vertexData = new VertexData();
   vertexData.positions = positions;
   vertexData.indices = indices;
   vertexData.uvs = uvs;
-  VertexData.ComputeNormals(positions, indices, normals);
   vertexData.normals = normals;
 
   const mesh = new Mesh(`tile_${tileKey(coord)}`, scene);
