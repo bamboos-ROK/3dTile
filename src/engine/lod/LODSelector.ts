@@ -1,5 +1,5 @@
-import type { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import type { TileBounds } from '../tiling/TilingScheme';
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { TileBounds } from "../tiling/TilingScheme";
 
 /**
  * Camera distance 기반 LOD 레벨 선택
@@ -8,16 +8,19 @@ import type { TileBounds } from '../tiling/TilingScheme';
  *   Level 0 → 1: 400
  *   Level 1 → 2: 200
  *   Level 2 → 3: 100
+ *   Level 3 → 4: 50
  *
  * 카메라가 가까울수록 더 높은 level(세밀한 타일)로 전환
  */
-const LOD_THRESHOLDS = [400, 200, 100] as const;
+const LOD_THRESHOLDS = [400, 200, 100, 50] as const;
 
 export class LODSelector {
   private readonly maxLevel: number;
+  private readonly terrainMaxHeight: number;
 
-  constructor(maxLevel = 3) {
+  constructor(maxLevel = 4, terrainMaxHeight = 480) {
     this.maxLevel = maxLevel;
+    this.terrainMaxHeight = terrainMaxHeight;
   }
 
   /**
@@ -25,14 +28,16 @@ export class LODSelector {
    * 해당 타일에 적합한 LOD level 반환 (0~maxLevel)
    */
   selectLevel(cameraPos: Vector3, bounds: TileBounds): number {
-    // 타일 경계 내에서 카메라에 가장 가까운 점까지의 거리 (nearest boundary point)
+    // 타일 3D 경계박스까지의 실제 최단 거리
     const clampedX = Math.max(bounds.minX, Math.min(cameraPos.x, bounds.maxX));
     const clampedZ = Math.max(bounds.minZ, Math.min(cameraPos.z, bounds.maxZ));
+    const clampedY = Math.max(0, Math.min(cameraPos.y, this.terrainMaxHeight));
     const dx = cameraPos.x - clampedX;
     const dz = cameraPos.z - clampedZ;
-    const distance = Math.sqrt(dx * dx + dz * dz);
+    const dy = cameraPos.y - clampedY;
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    for (let level = 0; level < this.maxLevel; level++) {
+    for (let level = 0; level < LOD_THRESHOLDS.length; level++) {
       if (distance > LOD_THRESHOLDS[level]) {
         return level;
       }
@@ -48,7 +53,7 @@ export class LODSelector {
   isSufficientDetail(
     currentLevel: number,
     cameraPos: Vector3,
-    bounds: TileBounds
+    bounds: TileBounds,
   ): boolean {
     const targetLevel = this.selectLevel(cameraPos, bounds);
     return currentLevel >= targetLevel;

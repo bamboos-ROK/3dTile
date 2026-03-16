@@ -44,7 +44,7 @@ export class TerrainTileManager {
     // AABB bounding box 설정
     tile.boundingBox = new BoundingBox(
       new Vector3(bounds.minX, 0, bounds.minZ),
-      new Vector3(bounds.maxX, 200, bounds.maxZ) // Y: 0~HEIGHT_SCALE
+      new Vector3(bounds.maxX, 480, bounds.maxZ) // Y: 0~HEIGHT_SCALE
     );
 
     tile.mesh = mesh;

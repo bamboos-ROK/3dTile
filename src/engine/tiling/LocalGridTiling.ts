@@ -16,7 +16,7 @@ export class LocalGridTiling implements TilingScheme {
   readonly maxLevel: number;
   readonly worldSize: number;
 
-  constructor(maxLevel = 3, worldSize = 512) {
+  constructor(maxLevel = 4, worldSize = 512) {
     this.maxLevel = maxLevel;
     this.worldSize = worldSize;
   }

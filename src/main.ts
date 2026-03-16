@@ -1,7 +1,9 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
 import { Scene } from '@babylonjs/core/scene';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
+import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import '@babylonjs/inspector';
 
 import { CameraController } from './engine/camera/CameraController';
@@ -20,14 +22,18 @@ async function main() {
 
   // 조명
   const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
-  light.intensity = 1.0;
+  light.intensity = 0.2;
+  light.groundColor = new Color3(0.1, 0.08, 0.06);
+
+  const dirLight = new DirectionalLight('dirLight', new Vector3(-1, -2, -1), scene);
+  dirLight.intensity = 1.2;
 
   // 카메라
   const camera = new CameraController(scene, canvas);
 
   // Tiling + LOD
-  const tiling = new LocalGridTiling(3, 512);
-  const lodSelector = new LODSelector(3);
+  const tiling = new LocalGridTiling(4, 512);
+  const lodSelector = new LODSelector(4);
 
   // Heightmap 로드
   const heightmap = await loadHeightmap('/heightmap.png');

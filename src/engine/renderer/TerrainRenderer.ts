@@ -1,4 +1,6 @@
 import { Frustum } from '@babylonjs/core/Maths/math.frustum';
+import { BoundingBox } from '@babylonjs/core/Culling/boundingBox';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TileCoord } from '../terrain/TerrainTile';
 import { tileKey } from '../terrain/TerrainTile';
@@ -43,7 +45,7 @@ export class TerrainRenderer {
     // 2. Quadtree traversal → visible tile set 수집
     const visibleKeys = new Set<string>();
     const visibleCoords: TileCoord[] = [];
-    this.traverse(this.tiling.getRoot(), cameraPos, visibleKeys, visibleCoords);
+    this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords);
 
     // 3. 새로 필요한 타일 생성
     for (const coord of visibleCoords) {
@@ -72,11 +74,18 @@ export class TerrainRenderer {
    */
   private traverse(
     coord: TileCoord,
-    cameraPos: import('@babylonjs/core/Maths/math.vector').Vector3,
+    cameraPos: Vector3,
+    frustumPlanes: import('@babylonjs/core/Maths/math.plane').Plane[],
     visibleKeys: Set<string>,
     visibleCoords: TileCoord[]
   ): void {
     const bounds = this.tiling.tileBoundsToWorld(coord);
+
+    const bb = new BoundingBox(
+      new Vector3(bounds.minX, 0, bounds.minZ),
+      new Vector3(bounds.maxX, 480, bounds.maxZ)
+    );
+    if (!bb.isInFrustum(frustumPlanes)) return;
 
     const isSufficient =
       this.tiling.isMaxLevel(coord) ||
@@ -87,7 +96,7 @@ export class TerrainRenderer {
       visibleCoords.push(coord);
     } else {
       for (const child of this.tiling.getChildren(coord)) {
-        this.traverse(child, cameraPos, visibleKeys, visibleCoords);
+        this.traverse(child, cameraPos, frustumPlanes, visibleKeys, visibleCoords);
       }
     }
   }

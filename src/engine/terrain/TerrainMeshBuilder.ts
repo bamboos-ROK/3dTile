@@ -1,6 +1,7 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import type { Scene } from "@babylonjs/core/scene";
 import type { TileCoord } from "./TerrainTile";
@@ -8,6 +9,7 @@ import { tileKey } from "./TerrainTile";
 
 const VERTEX_RESOLUTION = 32; // 타일당 32×32 vertices
 const HEIGHT_SCALE = 480;
+const TERRAIN_SIZE = 512; // 전체 지형 world 크기
 
 export interface HeightmapData {
   pixels: Uint8ClampedArray;
@@ -107,7 +109,7 @@ export function buildTerrainMesh(
 
       positions.push(wx, wy, wz);
       normals.push(0, 1, 0); // 임시 법선, computeNormals로 재계산
-      uvs.push(col / cells, row / cells);
+      uvs.push(wz / TERRAIN_SIZE, 1.0 - wx / TERRAIN_SIZE);
     }
   }
 
@@ -139,9 +141,9 @@ export function buildTerrainMesh(
   let mat = scene.getMaterialByName("terrain") as StandardMaterial | null;
   if (!mat) {
     mat = new StandardMaterial("terrain", scene);
-    mat.diffuseColor = new Color3(0.6, 0.55, 0.45); // 흙/모래 색
+    mat.diffuseTexture = new Texture("/Diffuse.exr", scene);
     mat.specularColor = new Color3(0.1, 0.1, 0.1);
-    mat.specularPower = 64;
+    mat.specularPower = 32;
   }
 
   mesh.material = mat;
