@@ -193,5 +193,6 @@ ls -R src/
 | 09 | `09_tile-seam-fix.md` | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함) |
 | 10 | `10_refactor-code-review.md` | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등) |
 | 11 | `11_lod-sse.md` | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=200 확정) |
+| 12 | `12_code-review-2.md` | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
