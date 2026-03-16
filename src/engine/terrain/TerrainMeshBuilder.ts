@@ -1,15 +1,12 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { Color3 } from "@babylonjs/core/Maths/math.color";
+import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Scene } from "@babylonjs/core/scene";
 import type { TileCoord } from "./TerrainTile";
 import { tileKey } from "./TerrainTile";
+import { HEIGHT_SCALE, TERRAIN_SIZE } from "../constants";
 
 const VERTEX_RESOLUTION = 32; // 타일당 32×32 vertices
-const HEIGHT_SCALE = 480;
-const TERRAIN_SIZE = 512; // 전체 지형 world 크기
 const PIXEL_WORLD_SIZE = TERRAIN_SIZE / 256; // = 2.0 (1픽셀 = 2 world units)
 
 export interface HeightmapData {
@@ -29,29 +26,6 @@ export async function loadHeightmap(url: string): Promise<HeightmapData> {
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, img.width, img.height);
-
-      // 디버그: R채널 픽셀값 통계
-      const data = imageData.data;
-      let minVal = 255,
-        maxVal = 0,
-        sum = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        const v = data[i]; // R 채널
-        if (v < minVal) minVal = v;
-        if (v > maxVal) maxVal = v;
-        sum += v;
-      }
-      const avg = sum / (data.length / 4);
-      console.log(`[Heightmap] size: ${img.width}×${img.height}`);
-      console.log(
-        `[Heightmap] R-channel  min=${minVal}  max=${maxVal}  avg=${avg.toFixed(1)}`,
-      );
-      const w = img.width,
-        h = img.height;
-      const s = (x: number, y: number): number => data[(y * w + x) * 4];
-      console.log(
-        `[Heightmap] corners — TL:${s(0, 0)} TR:${s(w - 1, 0)} BL:${s(0, h - 1)} BR:${s(w - 1, h - 1)} Center:${s(Math.floor(w / 2), Math.floor(h / 2))}`,
-      );
 
       resolve({ pixels: imageData.data, width: img.width, height: img.height });
     };
@@ -101,6 +75,7 @@ export function buildTerrainMesh(
   worldMinX: number,
   worldMinZ: number,
   worldTileSize: number,
+  material: StandardMaterial,
 ): Mesh {
   const n = VERTEX_RESOLUTION; // 32
   const cells = n - 1; // 31
@@ -206,15 +181,7 @@ export function buildTerrainMesh(
   vertexData.applyToMesh(mesh, false);
   mesh.isPickable = false;
 
-  let mat = scene.getMaterialByName("terrain") as StandardMaterial | null;
-  if (!mat) {
-    mat = new StandardMaterial("terrain", scene);
-    mat.diffuseTexture = new Texture("/Diffuse.exr", scene);
-    mat.specularColor = new Color3(0.1, 0.1, 0.1);
-    mat.specularPower = 32;
-  }
-
-  mesh.material = mat;
+  mesh.material = material;
 
   return mesh;
 }

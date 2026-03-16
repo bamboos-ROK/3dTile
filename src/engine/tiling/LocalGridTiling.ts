@@ -1,5 +1,6 @@
 import type { TileCoord } from '../terrain/TerrainTile';
 import type { TilingScheme, TileBounds } from './TilingScheme';
+import { MAX_LOD_LEVEL, TERRAIN_SIZE } from '../constants';
 
 /**
  * Local Grid Tiling
@@ -7,16 +8,17 @@ import type { TilingScheme, TileBounds } from './TilingScheme';
  * 정규화된 [0,1] 공간을 Quadtree로 분할하여
  * world 공간(512 × 512 units)으로 변환한다.
  *
- * Level 0: 1 tile  (512 × 512)
- * Level 1: 4 tiles (256 × 256)
+ * Level 0: 1 tile   (512 × 512)
+ * Level 1: 4 tiles  (256 × 256)
  * Level 2: 16 tiles (128 × 128)
  * Level 3: 64 tiles (64 × 64)
+ * Level 4: 256 tiles (32 × 32)
  */
 export class LocalGridTiling implements TilingScheme {
   readonly maxLevel: number;
   readonly worldSize: number;
 
-  constructor(maxLevel = 4, worldSize = 512) {
+  constructor(maxLevel = MAX_LOD_LEVEL, worldSize = TERRAIN_SIZE) {
     this.maxLevel = maxLevel;
     this.worldSize = worldSize;
   }

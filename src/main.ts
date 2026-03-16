@@ -4,6 +4,8 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import '@babylonjs/inspector';
 
 import { CameraController } from './engine/camera/CameraController';
@@ -32,15 +34,21 @@ async function main() {
   const camera = new CameraController(scene, canvas);
 
   // Tiling + LOD
-  const tiling = new LocalGridTiling(4, 512);
-  const lodSelector = new LODSelector(4);
+  const tiling = new LocalGridTiling();
+  const lodSelector = new LODSelector();
 
   // Heightmap 로드
   const heightmap = await loadHeightmap('/heightmap.png');
   console.log(`[Main] Heightmap loaded: ${heightmap.width}×${heightmap.height}`);
 
+  // 지형 머티리얼
+  const terrainMat = new StandardMaterial('terrain', scene);
+  terrainMat.diffuseTexture = new Texture('/Diffuse.exr', scene);
+  terrainMat.specularColor = new Color3(0.1, 0.1, 0.1);
+  terrainMat.specularPower = 32;
+
   // 타일 매니저 + 렌더러
-  const tileManager = new TerrainTileManager(scene, tiling, heightmap);
+  const tileManager = new TerrainTileManager(scene, tiling, heightmap, terrainMat);
   const renderer = new TerrainRenderer(scene, tiling, lodSelector, tileManager, camera);
 
   // Babylon Inspector 상시 활성화

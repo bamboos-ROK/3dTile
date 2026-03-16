@@ -14,7 +14,6 @@ export class CameraController {
   private readonly renderObserver: Observer<Scene>;
 
   private static readonly MOVE_SPEED = 80; // units/sec
-  private static readonly ZOOM_SPEED = 1.0;
   private static readonly MIN_HEIGHT = 20;
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
@@ -41,7 +40,7 @@ export class CameraController {
     // 마우스 휠: Y 고도 조절
     this.wheelHandler = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY * CameraController.ZOOM_SPEED;
+      const delta = e.deltaY;
       const nextY = this.camera.position.y + delta;
       if (nextY >= CameraController.MIN_HEIGHT) {
         this.camera.position.y = nextY;

@@ -80,7 +80,7 @@ Created → Loading → Active ↔ Visible → Disposed
 
 ### Camera 조작
 
-`UniversalCamera` 기반. 초기 위치 `(0, 500, 0)` — 지형 정중앙 위에서 내려다보는 시점.
+`UniversalCamera` 기반. 초기 위치 `(-100, 800, 300)` — 지형 바깥에서 비스듬히 내려다보는 시점.
 
 | 입력 | 동작 |
 |------|------|
@@ -99,7 +99,7 @@ Created → Loading → Active ↔ Visible → Disposed
 ### Babylon Inspector
 
 - **상시 활성화** — 연습용 데모이므로 항상 켜둠
-- `Inspector.Show(scene, {})` main.ts에서 호출
+- `scene.debugLayer.show({ embedMode: true })` main.ts에서 호출
 
 ### Heightmap 전제
 
@@ -191,5 +191,6 @@ ls -R src/
 | 07 | `07_rts-camera.md` | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용) |
 | 08 | `08_uv-offset-bugfix.md` | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제) |
 | 09 | `09_tile-seam-fix.md` | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함) |
+| 10 | `10_refactor-code-review.md` | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

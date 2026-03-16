@@ -1,11 +1,12 @@
-import type { Plane } from '@babylonjs/core/Maths/math.plane';
 import { BoundingBox } from '@babylonjs/core/Culling/boundingBox';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { TerrainTile, TileState, tileKey } from './TerrainTile';
 import type { TileCoord } from './TerrainTile';
 import type { HeightmapData } from './TerrainMeshBuilder';
 import { buildTerrainMesh } from './TerrainMeshBuilder';
+import { HEIGHT_SCALE } from '../constants';
 import type { TilingScheme } from '../tiling/TilingScheme';
 
 export class TerrainTileManager {
@@ -13,11 +14,13 @@ export class TerrainTileManager {
   private readonly scene: Scene;
   private readonly tiling: TilingScheme;
   private readonly heightmap: HeightmapData;
+  private readonly material: StandardMaterial;
 
-  constructor(scene: Scene, tiling: TilingScheme, heightmap: HeightmapData) {
+  constructor(scene: Scene, tiling: TilingScheme, heightmap: HeightmapData, material: StandardMaterial) {
     this.scene = scene;
     this.tiling = tiling;
     this.heightmap = heightmap;
+    this.material = material;
   }
 
   /** 타일 캐시에서 가져오거나 새로 생성하여 Active 상태로 만든다 */
@@ -38,20 +41,20 @@ export class TerrainTileManager {
       this.heightmap,
       bounds.minX,
       bounds.minZ,
-      bounds.size
+      bounds.size,
+      this.material,
     );
 
     // AABB bounding box 설정
     tile.boundingBox = new BoundingBox(
       new Vector3(bounds.minX, 0, bounds.minZ),
-      new Vector3(bounds.maxX, 480, bounds.maxZ) // Y: 0~HEIGHT_SCALE
+      new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
     );
 
     tile.mesh = mesh;
     tile.mesh.isVisible = false;
     tile.state = TileState.Active;
 
-    console.log(`[TileManager] Created: ${key}`);
     return tile;
   }
 
@@ -62,30 +65,16 @@ export class TerrainTileManager {
     if (!tile) return;
 
     tile.mesh?.dispose();
-    tile.state = TileState.Disposed;
     this.cache.delete(key);
-
-    console.log(`[TileManager] Disposed: ${key}`);
   }
 
   /** 현재 visible set 기준으로 가시성 업데이트 */
-  updateVisibility(
-    visibleKeys: Set<string>,
-    frustumPlanes: Plane[]
-  ): void {
+  updateVisibility(visibleKeys: Set<string>): void {
     for (const [key, tile] of this.cache) {
       if (!visibleKeys.has(key)) continue;
-      if (!tile.mesh || !tile.boundingBox) continue;
-
-      const inFrustum = tile.boundingBox.isInFrustum(frustumPlanes);
-
-      if (inFrustum) {
-        tile.mesh.isVisible = true;
-        tile.state = TileState.Visible;
-      } else {
-        tile.mesh.isVisible = false;
-        tile.state = TileState.Active;
-      }
+      if (!tile.mesh) continue;
+      tile.mesh.isVisible = true;
+      tile.state = TileState.Visible;
     }
   }
 

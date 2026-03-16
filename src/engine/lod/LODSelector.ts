@@ -1,5 +1,6 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { TileBounds } from "../tiling/TilingScheme";
+import { HEIGHT_SCALE, MAX_LOD_LEVEL } from "../constants";
 
 /**
  * Camera distance 기반 LOD 레벨 선택
@@ -18,7 +19,7 @@ export class LODSelector {
   private readonly maxLevel: number;
   private readonly terrainMaxHeight: number;
 
-  constructor(maxLevel = 4, terrainMaxHeight = 480) {
+  constructor(maxLevel = MAX_LOD_LEVEL, terrainMaxHeight = HEIGHT_SCALE) {
     this.maxLevel = maxLevel;
     this.terrainMaxHeight = terrainMaxHeight;
   }

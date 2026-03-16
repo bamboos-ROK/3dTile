@@ -1,6 +1,7 @@
 import { Frustum } from '@babylonjs/core/Maths/math.frustum';
 import { BoundingBox } from '@babylonjs/core/Culling/boundingBox';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import type { Plane } from '@babylonjs/core/Maths/math.plane';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TileCoord } from '../terrain/TerrainTile';
 import { tileKey } from '../terrain/TerrainTile';
@@ -8,6 +9,7 @@ import type { TerrainTileManager } from '../terrain/TerrainTileManager';
 import type { LODSelector } from '../lod/LODSelector';
 import type { TilingScheme } from '../tiling/TilingScheme';
 import type { CameraController } from '../camera/CameraController';
+import { HEIGHT_SCALE } from '../constants';
 
 /**
  * 매 프레임 Quadtree Traversal을 수행하여
@@ -61,8 +63,8 @@ export class TerrainRenderer {
       }
     }
 
-    // 5. Frustum culling으로 visible/active 상태 업데이트
-    this.tileManager.updateVisibility(visibleKeys, frustumPlanes);
+    // 5. visible 상태 업데이트
+    this.tileManager.updateVisibility(visibleKeys);
   }
 
   /**
@@ -75,7 +77,7 @@ export class TerrainRenderer {
   private traverse(
     coord: TileCoord,
     cameraPos: Vector3,
-    frustumPlanes: import('@babylonjs/core/Maths/math.plane').Plane[],
+    frustumPlanes: Plane[],
     visibleKeys: Set<string>,
     visibleCoords: TileCoord[]
   ): void {
@@ -83,7 +85,7 @@ export class TerrainRenderer {
 
     const bb = new BoundingBox(
       new Vector3(bounds.minX, 0, bounds.minZ),
-      new Vector3(bounds.maxX, 480, bounds.maxZ)
+      new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
     );
     if (!bb.isInFrustum(frustumPlanes)) return;
 
