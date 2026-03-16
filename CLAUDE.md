@@ -77,6 +77,20 @@ Babylon.js 내장 API 사용:
 Created → Loading → Active ↔ Visible → Disposed
 ```
 
+### Camera 조작
+
+`ArcRotateCamera` 기반. 내장 키보드 입력(`ArcRotateCameraKeyboardMoveInput`)은 제거하고 커스텀 방향키 패닝으로 대체.
+
+| 입력 | 동작 |
+|------|------|
+| 왼쪽 마우스 드래그 | 궤도 회전 |
+| 마우스 휠 | 줌인/줌아웃 |
+| ↑ / ↓ / ← / → | 카메라 시선 방향 기준 타겟 이동 (패닝) |
+
+- 패닝 속도: `camera.radius × 0.5 × deltaTime` — 줌 거리에 비례
+- 패닝 방향: alpha 각도 기준 forward/right 벡터 (XZ 평면)
+- `panningSensibility = 0` — 마우스 오른쪽 패닝 비활성화
+
 ### Babylon Inspector
 
 - **상시 활성화** — 연습용 데모이므로 항상 켜둠
