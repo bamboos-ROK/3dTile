@@ -5,16 +5,17 @@ import { HEIGHT_SCALE } from "../constants";
 /**
  * Screen-Space Error(SSE) 기반 LOD 레벨 선택
  *
- * screenError = (geometricError × projFactor) / distance
+ * screenError = (geometricError × projFactor) / depth
  * screenError < pixelThreshold → 현재 LOD로 충분 (세분화 불필요)
  *
  * projFactor = screenHeight / (2 × tan(fov / 2))
  * geometricError = bounds.size / 2  (타일 크기의 절반으로 근사)
+ * depth = dot(tileCenter - cameraPos, cameraForward)  (시야 방향 투영 거리)
  */
 export class LODSelector {
   private readonly pixelThreshold: number;
 
-  constructor(pixelThreshold = 200) {
+  constructor(pixelThreshold = 150) {
     this.pixelThreshold = pixelThreshold;
   }
 
@@ -27,20 +28,21 @@ export class LODSelector {
     cameraPos: Vector3,
     bounds: TileBounds,
     projFactor: number,
+    cameraForward: Vector3,
   ): boolean {
-    const clampedX = Math.max(bounds.minX, Math.min(cameraPos.x, bounds.maxX));
-    const clampedZ = Math.max(bounds.minZ, Math.min(cameraPos.z, bounds.maxZ));
-    const clampedY = Math.max(0, Math.min(cameraPos.y, HEIGHT_SCALE));
-    const dx = cameraPos.x - clampedX;
-    const dz = cameraPos.z - clampedZ;
-    const dy = cameraPos.y - clampedY;
-    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const dx = bounds.centerX - cameraPos.x;
+    const dy = HEIGHT_SCALE / 2 - cameraPos.y;
+    const dz = bounds.centerZ - cameraPos.z;
 
-    // 카메라가 타일 AABB 내부: 항상 세분화
-    if (distance < 1e-6) return false;
+    // 타일 중심까지의 depth (카메라 forward 방향 투영)
+    const depth =
+      dx * cameraForward.x + dy * cameraForward.y + dz * cameraForward.z;
+
+    // 카메라 뒤 또는 near plane 이내: 세분화 불필요 (화면 영향 없음)
+    if (depth < 1.0) return true;
 
     const geometricError = bounds.size / 2;
-    const screenError = (geometricError * projFactor) / distance;
+    const screenError = (geometricError * projFactor) / depth;
     return screenError < this.pixelThreshold;
   }
 }

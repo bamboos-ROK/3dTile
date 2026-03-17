@@ -41,6 +41,7 @@ export class TerrainRenderer {
   /** 매 프레임 호출 */
   update(): void {
     const cameraPos = this.camera.position;
+    const forwardVec = this.camera.target.subtract(cameraPos).normalize();
 
     // SSE projFactor: 화면 높이 / (2 × tan(fov / 2))
     const screenHeight = this.scene.getEngine().getRenderHeight();
@@ -53,7 +54,7 @@ export class TerrainRenderer {
     // 2. Quadtree traversal → visible tile set 수집
     const visibleKeys = new Set<string>();
     const visibleCoords: TileCoord[] = [];
-    this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor);
+    this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor, forwardVec);
 
     // 3. 새로 필요한 타일 생성
     for (const coord of visibleCoords) {
@@ -90,7 +91,8 @@ export class TerrainRenderer {
     frustumPlanes: Plane[],
     visibleKeys: Set<string>,
     visibleCoords: TileCoord[],
-    projFactor: number
+    projFactor: number,
+    forwardVec: Vector3,
   ): void {
     const bounds = this.tiling.tileBoundsToWorld(coord);
 
@@ -107,14 +109,14 @@ export class TerrainRenderer {
 
     const isSufficient =
       this.tiling.isMaxLevel(coord) ||
-      this.lodSelector.isSufficientDetail(cameraPos, bounds, projFactor);
+      this.lodSelector.isSufficientDetail(cameraPos, bounds, projFactor, forwardVec);
 
     if (isSufficient) {
       visibleKeys.add(tileKey(coord));
       visibleCoords.push(coord);
     } else {
       for (const child of this.tiling.getChildren(coord)) {
-        this.traverse(child, cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor);
+        this.traverse(child, cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor, forwardVec);
       }
     }
   }

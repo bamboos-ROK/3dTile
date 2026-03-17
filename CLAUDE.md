@@ -39,7 +39,7 @@ Tile/
 ### LOD 레벨 (4단계)
 
 | Level | 타일 수 | Heightmap 샘플 영역 |
-|-------|---------|---------------------|
+| ----- | ------- | ------------------- |
 | 0     | 1       | 256×256 px          |
 | 1     | 4       | 128×128 px          |
 | 2     | 16      | 64×64 px            |
@@ -69,6 +69,7 @@ Tile/
 ### Frustum Culling
 
 Babylon.js 내장 API 사용:
+
 - `Frustum.GetPlanes(transformMatrix)`
 - `BoundingBox.IsInFrustum(frustumPlanes)`
 
@@ -82,15 +83,15 @@ Created → Loading → Active ↔ Visible → Disposed
 
 `UniversalCamera` 기반. 초기 위치 `(-100, 800, 300)` — 지형 바깥에서 비스듬히 내려다보는 시점.
 
-| 입력 | 동작 |
-|------|------|
-| W / ↑ | 앞으로 이동 |
-| S / ↓ | 뒤로 이동 |
-| A / ← | 왼쪽으로 이동 |
-| D / → | 오른쪽으로 이동 |
-| 마우스 클릭+드래그 | 시선 방향 변경 |
-| 마우스 휠 위 | 카메라 고도 감소 (줌인) |
-| 마우스 휠 아래 | 카메라 고도 증가 (줌아웃) |
+| 입력               | 동작                      |
+| ------------------ | ------------------------- |
+| W / ↑              | 앞으로 이동               |
+| S / ↓              | 뒤로 이동                 |
+| A / ←              | 왼쪽으로 이동             |
+| D / →              | 오른쪽으로 이동           |
+| 마우스 클릭+드래그 | 시선 방향 변경            |
+| 마우스 휠 위       | 카메라 고도 감소 (줌인)   |
+| 마우스 휠 아래     | 카메라 고도 증가 (줌아웃) |
 
 - 이동 속도: `camera.speed = 5`
 - 휠 고도 최솟값: Y = 20
@@ -161,6 +162,7 @@ ls -R src/
 ### 2. 구현 진행 기준
 
 `docs/` 최신 계획 문서의 **구현 단계(Step)**를 기준으로 삼는다.
+
 - 파일이 존재하면 → 해당 Step 완료로 간주
 - 파일이 없으면 → 해당 Step부터 재개
 
@@ -180,23 +182,24 @@ ls -R src/
 
 `docs/` 폴더에 생성 순서대로 번호를 붙여 저장한다.
 
-| 번호 | 파일 | 설명 |
-| --- | --- | --- |
-| 00 | `00_PRD.md` | 최초 PRD (원본) |
-| 01 | `01_tile-lod-terrain-plan.md` | 1차 구현 계획 |
-| 02 | `02_debug-history.md` | 초기 버그 디버깅 히스토리 |
-| 03 | `03_visual-quality-plan.md` | 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러) |
-| 04 | `04_lod-camera-bugfix.md` | LOD 기준점 버그 수정 (camera.position → camera.target) |
-| 05 | `05_wheel-lod-bugfix.md` | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling) |
-| 06 | `06_diffuse-texture.md` | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거) |
-| 07 | `07_rts-camera.md` | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용) |
-| 08 | `08_uv-offset-bugfix.md` | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제) |
-| 09 | `09_tile-seam-fix.md` | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함) |
-| 10 | `10_refactor-code-review.md` | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등) |
-| 11 | `11_lod-sse.md` | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=200 확정) |
-| 12 | `12_code-review-2.md` | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
-| 13 | `13_prd-comparison.md` | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성) |
-| 14 | `14_arc-rotate-camera.md` | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값) |
-| 15 | `15_debug-camera.md` | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이) |
+| 번호 | 파일                          | 설명                                                                                         |
+| ---- | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| 00   | `00_PRD.md`                   | 최초 PRD (원본)                                                                              |
+| 01   | `01_tile-lod-terrain-plan.md` | 1차 구현 계획                                                                                |
+| 02   | `02_debug-history.md`         | 초기 버그 디버깅 히스토리                                                                    |
+| 03   | `03_visual-quality-plan.md`   | 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러)                                         |
+| 04   | `04_lod-camera-bugfix.md`     | LOD 기준점 버그 수정 (camera.position → camera.target)                                       |
+| 05   | `05_wheel-lod-bugfix.md`      | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling)            |
+| 06   | `06_diffuse-texture.md`       | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거)                        |
+| 07   | `07_rts-camera.md`            | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용)                                            |
+| 08   | `08_uv-offset-bugfix.md`      | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제)                              |
+| 09   | `09_tile-seam-fix.md`         | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함)                     |
+| 10   | `10_refactor-code-review.md`  | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등)                 |
+| 11   | `11_lod-sse.md`               | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=150 확정)        |
+| 12   | `12_code-review-2.md`         | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
+| 13   | `13_prd-comparison.md`        | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성)                        |
+| 14   | `14_arc-rotate-camera.md`     | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)  |
+| 15   | `15_debug-camera.md`          | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)                                        |
+| 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                               |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
