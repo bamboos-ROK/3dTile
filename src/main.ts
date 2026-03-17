@@ -14,6 +14,7 @@ import { LODSelector } from "./engine/lod/LODSelector";
 import { TerrainTileManager } from "./engine/terrain/TerrainTileManager";
 import { TerrainRenderer } from "./engine/renderer/TerrainRenderer";
 import { loadHeightmap } from "./engine/terrain/TerrainMeshBuilder";
+import { DebugCameraOverlay } from "./engine/debug/DebugCameraOverlay";
 
 async function main() {
   const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -73,14 +74,18 @@ async function main() {
     embedMode: true,
   });
 
+  const debugOverlay = new DebugCameraOverlay(scene, canvas, camera, renderer, tileManager);
+
   // 렌더 루프
   engine.runRenderLoop(() => {
     renderer.update();
+    debugOverlay.update();
     scene.render();
   });
 
   window.addEventListener("resize", () => engine.resize());
   window.addEventListener("beforeunload", () => {
+    debugOverlay.dispose();
     camera.dispose();
     engine.dispose();
   });

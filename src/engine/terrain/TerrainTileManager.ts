@@ -73,4 +73,9 @@ export class TerrainTileManager {
     return new Set(this.cache.keys());
   }
 
+  /** key로 개별 타일 조회 */
+  getTile(key: string): TerrainTile | undefined {
+    return this.cache.get(key);
+  }
+
 }

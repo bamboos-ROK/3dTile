@@ -140,6 +140,7 @@ npm run build    # 프로덕션 빌드
 - [x] Step 8 — TerrainRenderer (Quadtree Traversal)
 - [x] Step 9 — main.ts 진입점 + npm install + 동작 확인
 - [x] Step 10 — 타일 seam 수정 (Heightmap 법선 + Skirt geometry)
+- [x] Step 11 — 디버그 카메라 (DebugCameraOverlay: F키 전환, LOD 색상 시각화)
 
 ---
 
@@ -196,5 +197,6 @@ ls -R src/
 | 12 | `12_code-review-2.md` | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
 | 13 | `13_prd-comparison.md` | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성) |
 | 14 | `14_arc-rotate-camera.md` | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값) |
+| 15 | `15_debug-camera.md` | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

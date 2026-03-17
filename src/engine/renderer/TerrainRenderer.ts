@@ -22,6 +22,7 @@ export class TerrainRenderer {
   private readonly tileManager: TerrainTileManager;
   private readonly camera: CameraController;
   private readonly bbCache = new Map<string, BoundingBox>();
+  private lastVisibleKeys = new Set<string>();
 
   constructor(
     scene: Scene,
@@ -69,6 +70,11 @@ export class TerrainRenderer {
 
     // 5. visible 상태 업데이트
     this.tileManager.updateVisibility(visibleKeys);
+    this.lastVisibleKeys = visibleKeys;
+  }
+
+  get visibleTileKeys(): ReadonlySet<string> {
+    return this.lastVisibleKeys;
   }
 
   /**
