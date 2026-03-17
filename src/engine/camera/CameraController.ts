@@ -1,52 +1,45 @@
-import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { Observer } from "@babylonjs/core/Misc/observable";
 
 export class CameraController {
-  readonly camera: UniversalCamera;
+  readonly camera: ArcRotateCamera;
   private readonly scene: Scene;
-  private readonly canvas: HTMLCanvasElement;
   private readonly keysDown = new Set<string>();
   private readonly keydownHandler: (e: KeyboardEvent) => void;
   private readonly keyupHandler: (e: KeyboardEvent) => void;
-  private readonly wheelHandler: (e: WheelEvent) => void;
   private readonly renderObserver: Observer<Scene>;
 
   private static readonly MOVE_SPEED = 80; // units/sec
-  private static readonly MIN_HEIGHT = 20;
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
     this.scene = scene;
-    this.canvas = canvas;
 
-    this.camera = new UniversalCamera(
+    this.camera = new ArcRotateCamera(
       "mainCamera",
-      new Vector3(-100, 800, 300),
+      -Math.PI / 2,
+      Math.PI / 3,
+      900,
+      Vector3.Zero(),
       scene,
     );
-    this.camera.setTarget(new Vector3(0, 0, 0));
     this.camera.attachControl(canvas, true);
 
-    // 기본 키보드 이동 제거 (마우스 회전은 유지)
-    this.camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
+    // 키보드 이동 입력 제거 (W/S/A/D는 직접 처리)
+    this.camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
+
+    // 카메라 제한값
+    this.camera.lowerBetaLimit = Math.PI / 8;        // 22.5° — 정수직 하향 방지
+    this.camera.upperBetaLimit = Math.PI / 2 - 0.05; // ~87°  — 지평선 진입 방지
+    this.camera.lowerRadiusLimit = 50;
+    this.camera.upperRadiusLimit = 2000;
 
     // 키 상태 추적
     this.keydownHandler = (e: KeyboardEvent) => this.keysDown.add(e.code);
     this.keyupHandler = (e: KeyboardEvent) => this.keysDown.delete(e.code);
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
-
-    // 마우스 휠: Y 고도 조절
-    this.wheelHandler = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY;
-      const nextY = this.camera.position.y + delta;
-      if (nextY >= CameraController.MIN_HEIGHT) {
-        this.camera.position.y = nextY;
-      }
-    };
-    canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
 
     // 매 프레임: XZ 수평 이동
     this.renderObserver = scene.onBeforeRenderObservable.add(() => {
@@ -69,20 +62,17 @@ export class CameraController {
     if (forwardInput === 0 && rightInput === 0) return;
 
     const dt = this.scene.getEngine().getDeltaTime() / 1000;
+    const alpha = this.camera.alpha;
 
-    // 카메라 전방 벡터를 XZ 평면에 투영
-    const dir = this.camera.target.subtract(this.camera.position);
-    dir.y = 0;
-    if (dir.lengthSquared() < 1e-6) return;
-    const forward = Vector3.Normalize(dir);
-
-    const right = Vector3.Normalize(Vector3.Cross(Vector3.Up(), forward));
+    // alpha에서 XZ forward 직접 계산 (이미 단위벡터)
+    const forward = new Vector3(-Math.cos(alpha), 0, -Math.sin(alpha));
+    // Cross(Up, forward): facing +Z → right = +X (올바른 방향)
+    const right = Vector3.Cross(Vector3.Up(), forward).normalize();
 
     const move = forward
       .scale(forwardInput * CameraController.MOVE_SPEED * dt)
       .addInPlace(right.scale(rightInput * CameraController.MOVE_SPEED * dt));
 
-    this.camera.position.addInPlace(move);
     this.camera.target.addInPlace(move);
   }
 
@@ -98,6 +88,5 @@ export class CameraController {
     this.scene.onBeforeRenderObservable.remove(this.renderObserver);
     window.removeEventListener("keydown", this.keydownHandler);
     window.removeEventListener("keyup", this.keyupHandler);
-    this.canvas.removeEventListener("wheel", this.wheelHandler);
   }
 }

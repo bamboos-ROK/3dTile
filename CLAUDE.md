@@ -195,5 +195,6 @@ ls -R src/
 | 11 | `11_lod-sse.md` | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=200 확정) |
 | 12 | `12_code-review-2.md` | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
 | 13 | `13_prd-comparison.md` | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성) |
+| 14 | `14_arc-rotate-camera.md` | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
