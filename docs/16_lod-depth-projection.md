@@ -52,28 +52,35 @@ isSufficientDetail(cameraPos: Vector3, bounds: TileBounds, projFactor: number): 
 }
 ```
 
-**현재** (camera forward 투영 depth):
+**현재** (hybrid: forward depth + 유클리드 fallback):
 ```ts
 isSufficientDetail(cameraPos: Vector3, bounds: TileBounds, projFactor: number, cameraForward: Vector3): boolean {
-  // depth = dot(tileCenter - cameraPos, cameraForward)
   const dx = bounds.centerX - cameraPos.x;
   const dy = HEIGHT_SCALE / 2 - cameraPos.y;
   const dz = bounds.centerZ - cameraPos.z;
+
+  // forward 방향 투영 depth
   const depth = dx * cameraForward.x + dy * cameraForward.y + dz * cameraForward.z;
 
-  if (depth < 1.0) return false; // 카메라 뒤 또는 near plane 이내
-  const screenError = (geometricError * projFactor) / depth;
+  // 유클리드 거리: forward와 수직인 타일(발밑 등)의 depth ≈ 0 폭발 방지
+  const euclidean = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  const effectiveDepth = Math.max(depth, euclidean * 0.5);
+
+  if (effectiveDepth < 1.2) return true; // 카메라 뒤 또는 near plane 이내
+  const screenError = (geometricError * projFactor) / effectiveDepth;
   return screenError < pixelThreshold;
 }
 ```
 
 **변경 포인트**:
-| 항목 | 이전 | 현재 |
-|------|------|------|
-| 거리 기준점 | AABB 최근접점 | 타일 중심 |
-| 거리 계산 방식 | 유클리드 거리 | forward 방향 내적(depth) |
-| near plane 처리 | `distance < 1e-6` | `depth < 1.0` |
-| 파라미터 | `cameraPos, bounds, projFactor` | `+ cameraForward: Vector3` |
+
+| 항목 | 유클리드(초기) | forward depth(1차) | hybrid(현재) |
+| ---- | ------------ | ----------------- | ----------- |
+| 거리 기준점 | AABB 최근접점 | 타일 중심 | 타일 중심 |
+| 거리 계산 방식 | 유클리드 거리 | forward 내적(depth) | `max(depth, euclidean × 0.5)` |
+| near plane 처리 | `distance < 1e-6` | `depth < 1.0` | `effectiveDepth < 1.2` |
+| 과잉 세분화 위치 | 화면 가장자리 | 카메라 발밑(forward 수직) | 없음 |
+| 파라미터 | `cameraPos, bounds, projFactor` | `+ cameraForward: Vector3` | 동일 |
 
 ---
 

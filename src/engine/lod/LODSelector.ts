@@ -38,11 +38,15 @@ export class LODSelector {
     const depth =
       dx * cameraForward.x + dy * cameraForward.y + dz * cameraForward.z;
 
+    // 유클리드 거리: forward와 수직인 타일(발밑 등)의 depth ≈ 0 폭발 방지
+    const euclidean = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const effectiveDepth = Math.max(depth, euclidean * 0.5);
+
     // 카메라 뒤 또는 near plane 이내: 세분화 불필요 (화면 영향 없음)
-    if (depth < 1.0) return true;
+    if (effectiveDepth < 1.2) return true;
 
     const geometricError = bounds.size / 2;
-    const screenError = (geometricError * projFactor) / depth;
+    const screenError = (geometricError * projFactor) / effectiveDepth;
     return screenError < this.pixelThreshold;
   }
 }

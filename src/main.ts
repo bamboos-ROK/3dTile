@@ -44,9 +44,6 @@ async function main() {
 
   // Heightmap 로드
   const heightmap = await loadHeightmap("/heightmap.png");
-  console.log(
-    `[Main] Heightmap loaded: ${heightmap.width}×${heightmap.height}`,
-  );
 
   // 지형 머티리얼
   const terrainMat = new StandardMaterial("terrain", scene);
@@ -74,7 +71,13 @@ async function main() {
     embedMode: true,
   });
 
-  const debugOverlay = new DebugCameraOverlay(scene, canvas, camera, renderer, tileManager);
+  const debugOverlay = new DebugCameraOverlay(
+    scene,
+    canvas,
+    camera,
+    renderer,
+    tileManager,
+  );
 
   // 렌더 루프
   engine.runRenderLoop(() => {
