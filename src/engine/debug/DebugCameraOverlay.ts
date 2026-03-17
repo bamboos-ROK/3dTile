@@ -1,13 +1,13 @@
-import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import type { Scene } from '@babylonjs/core/scene';
-import type { Material } from '@babylonjs/core/Materials/material';
-import { parseTileKey } from '../terrain/TerrainTile';
-import type { CameraController } from '../camera/CameraController';
-import type { TerrainRenderer } from '../renderer/TerrainRenderer';
-import type { TerrainTileManager } from '../terrain/TerrainTileManager';
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Scene } from "@babylonjs/core/scene";
+import type { Material } from "@babylonjs/core/Materials/material";
+import { parseTileKey } from "../terrain/TerrainTile";
+import type { CameraController } from "../camera/CameraController";
+import type { TerrainRenderer } from "../renderer/TerrainRenderer";
+import type { TerrainTileManager } from "../terrain/TerrainTileManager";
 
 const LOD_COLORS: readonly Color3[] = [
   new Color3(0.2, 0.4, 1.0), // Level 0: 파란색 (가장 거침)
@@ -45,10 +45,10 @@ export class DebugCameraOverlay {
     this.tileManager = tileManager;
 
     this.debugCamera = new ArcRotateCamera(
-      'debugCamera',
-      -Math.PI / 2,
-      Math.PI / 3,
-      1500,
+      "debugCamera",
+      Math.PI * 0.3,
+      Math.PI * 0.4,
+      2000,
       Vector3.Zero(),
       scene,
     );
@@ -58,9 +58,9 @@ export class DebugCameraOverlay {
     this.debugCamera.upperBetaLimit = Math.PI / 2 - 0.05;
 
     this.keydownHandler = (e: KeyboardEvent) => {
-      if (e.code === 'KeyF') this.toggle();
+      if (e.code === "KeyF") this.toggle();
     };
-    window.addEventListener('keydown', this.keydownHandler);
+    window.addEventListener("keydown", this.keydownHandler);
   }
 
   toggle(): void {
@@ -123,7 +123,7 @@ export class DebugCameraOverlay {
   dispose(): void {
     if (this.isDebugOn) this.restoreAllMaterials();
     this.debugCamera.dispose();
-    this.lodMaterials.forEach(m => m.dispose());
-    window.removeEventListener('keydown', this.keydownHandler);
+    this.lodMaterials.forEach((m) => m.dispose());
+    window.removeEventListener("keydown", this.keydownHandler);
   }
 }

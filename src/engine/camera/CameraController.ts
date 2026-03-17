@@ -18,9 +18,9 @@ export class CameraController {
 
     this.camera = new ArcRotateCamera(
       "mainCamera",
-      -Math.PI / 2,
-      Math.PI / 3,
-      900,
+      Math.PI * 0.8,
+      Math.PI * 0.2,
+      750,
       Vector3.Zero(),
       scene,
     );
@@ -30,7 +30,7 @@ export class CameraController {
     this.camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
 
     // 카메라 제한값
-    this.camera.lowerBetaLimit = Math.PI / 8;        // 22.5° — 정수직 하향 방지
+    this.camera.lowerBetaLimit = Math.PI / 8; // 22.5° — 정수직 하향 방지
     this.camera.upperBetaLimit = Math.PI / 2 - 0.05; // ~87°  — 지평선 진입 방지
     this.camera.lowerRadiusLimit = 50;
     this.camera.upperRadiusLimit = 2000;
@@ -61,7 +61,7 @@ export class CameraController {
     const rightInput = rgt - lft;
     if (forwardInput === 0 && rightInput === 0) return;
 
-    const dt = this.scene.getEngine().getDeltaTime() / 1000;
+    const dt = Math.min(this.scene.getEngine().getDeltaTime(), 33) / 1000;
     const alpha = this.camera.alpha;
 
     // alpha에서 XZ forward 직접 계산 (이미 단위벡터)
@@ -88,5 +88,6 @@ export class CameraController {
     this.scene.onBeforeRenderObservable.remove(this.renderObserver);
     window.removeEventListener("keydown", this.keydownHandler);
     window.removeEventListener("keyup", this.keyupHandler);
+    this.camera.detachControl();
   }
 }
