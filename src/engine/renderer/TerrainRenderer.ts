@@ -89,17 +89,17 @@ export class TerrainRenderer {
    * BVS는 coarser 방향에만 적용되어야 한다.
    */
   private computeCoarserBorders(coord: TileCoord, visibleKeys: Set<string>): CoarserBorders {
-    const { tileX: tx, tileY: ty, level: L } = coord;
-    const maxTiles = 2 ** L;
+    const { tileX: tx, tileY: ty, level: lvl } = coord;
+    const maxTiles = 2 ** lvl;
 
     const isCoarser = (nbTx: number, nbTy: number): boolean => {
       if (nbTx < 0 || nbTy < 0 || nbTx >= maxTiles || nbTy >= maxTiles) return false;
-      if (visibleKeys.has(tileKey({ tileX: nbTx, tileY: nbTy, level: L }))) return false;
-      if (L > 0) {
+      if (visibleKeys.has(tileKey({ tileX: nbTx, tileY: nbTy, level: lvl }))) return false;
+      if (lvl > 0) {
         return visibleKeys.has(tileKey({
           tileX: Math.floor(nbTx / 2),
           tileY: Math.floor(nbTy / 2),
-          level: L - 1,
+          level: lvl - 1,
         }));
       }
       return false;
@@ -121,7 +121,7 @@ export class TerrainRenderer {
    */
   private enforceConsistency(visibleKeys: Set<string>, visibleCoords: TileCoord[]): void {
     const coordsByKey = new Map<string, TileCoord>();
-    for (const c of visibleCoords) coordsByKey.set(tileKey(c), c);
+    for (const coord of visibleCoords) coordsByKey.set(tileKey(coord), coord);
 
     let changed = true;
     let iterations = 0;
@@ -136,34 +136,34 @@ export class TerrainRenderer {
           { tileX: coord.tileX, tileY: coord.tileY + 1, level: coord.level },
         ];
 
-        for (const nb of sameNeighbors) {
-          if (nb.tileX < 0 || nb.tileY < 0 || nb.tileX >= maxTiles || nb.tileY >= maxTiles) continue;
-          if (coordsByKey.has(tileKey(nb))) continue; // 같은 레벨 이웃 존재 → OK
+        for (const neighbor of sameNeighbors) {
+          if (neighbor.tileX < 0 || neighbor.tileY < 0 || neighbor.tileX >= maxTiles || neighbor.tileY >= maxTiles) continue;
+          if (coordsByKey.has(tileKey(neighbor))) continue; // 같은 레벨 이웃 존재 → OK
 
-          // nb 위치를 담당하는 visible ancestor 탐색
-          for (let aLevel = coord.level - 1; aLevel >= 0; aLevel--) {
-            const scale = 2 ** (coord.level - aLevel);
+          // neighbor 위치를 담당하는 visible ancestor 탐색
+          for (let ancestorLevel = coord.level - 1; ancestorLevel >= 0; ancestorLevel--) {
+            const scale = 2 ** (coord.level - ancestorLevel);
             const ancestor: TileCoord = {
-              tileX: Math.floor(nb.tileX / scale),
-              tileY: Math.floor(nb.tileY / scale),
-              level: aLevel,
+              tileX: Math.floor(neighbor.tileX / scale),
+              tileY: Math.floor(neighbor.tileY / scale),
+              level: ancestorLevel,
             };
-            const aKey = tileKey(ancestor);
-            if (!coordsByKey.has(aKey)) continue;
+            const ancestorKey = tileKey(ancestor);
+            if (!coordsByKey.has(ancestorKey)) continue;
 
-            if (coord.level - aLevel > 1) {
+            if (coord.level - ancestorLevel > 1) {
               // ancestor 제거 후 4개 children 추가
-              coordsByKey.delete(aKey);
-              visibleKeys.delete(aKey);
-              const idx = visibleCoords.findIndex(c => tileKey(c) === aKey);
+              coordsByKey.delete(ancestorKey);
+              visibleKeys.delete(ancestorKey);
+              const idx = visibleCoords.findIndex(c => tileKey(c) === ancestorKey);
               if (idx !== -1) visibleCoords.splice(idx, 1);
 
-              const childLevel = aLevel + 1;
-              for (let cx = 0; cx < 2; cx++) {
-                for (let cy = 0; cy < 2; cy++) {
+              const childLevel = ancestorLevel + 1;
+              for (let childX = 0; childX < 2; childX++) {
+                for (let childY = 0; childY < 2; childY++) {
                   const child: TileCoord = {
-                    tileX: ancestor.tileX * 2 + cx,
-                    tileY: ancestor.tileY * 2 + cy,
+                    tileX: ancestor.tileX * 2 + childX,
+                    tileY: ancestor.tileY * 2 + childY,
                     level: childLevel,
                   };
                   const childKey = tileKey(child);
@@ -202,15 +202,15 @@ export class TerrainRenderer {
     const bounds = this.tiling.tileBoundsToWorld(coord);
 
     const key = tileKey(coord);
-    let bb = this.bbCache.get(key);
-    if (!bb) {
-      bb = new BoundingBox(
+    let boundingBox = this.bbCache.get(key);
+    if (!boundingBox) {
+      boundingBox = new BoundingBox(
         new Vector3(bounds.minX, 0, bounds.minZ),
         new Vector3(bounds.maxX, HEIGHT_SCALE, bounds.maxZ),
       );
-      this.bbCache.set(key, bb);
+      this.bbCache.set(key, boundingBox);
     }
-    if (!bb.isInFrustum(frustumPlanes)) return;
+    if (!boundingBox.isInFrustum(frustumPlanes)) return;
 
     const isSufficient =
       this.tiling.isMaxLevel(coord) ||
