@@ -4,7 +4,7 @@ import type { StandardMaterial } from "@babylonjs/core/Materials/standardMateria
 import type { Scene } from "@babylonjs/core/scene";
 import type { TileCoord, CoarserBorders } from "./TerrainTile";
 import { tileKey } from "./TerrainTile";
-import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION, PIXEL_WORLD_SIZE } from "../constants";
+import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION } from "../constants";
 import type { HeightmapData } from "../heightmap/HeightmapLoader";
 
 /** heightmap 픽셀 좌표에서 높이값 샘플링 (0~HEIGHT_SCALE) */
@@ -20,13 +20,16 @@ function computeHeightmapNormal(
   hm: HeightmapData,
   hmX: number,
   hmY: number,
+  pixelWorldSize: number,
 ): [number, number, number] {
-  const heightLeft  = sampleHeight(hm, hmX - 1, hmY);
-  const heightRight = sampleHeight(hm, hmX + 1, hmY);
-  const heightDown  = sampleHeight(hm, hmX, hmY - 1);
-  const heightUp    = sampleHeight(hm, hmX, hmY + 1);
-  const slopeX = (heightRight - heightLeft) / (2 * PIXEL_WORLD_SIZE);
-  const slopeZ = (heightUp    - heightDown) / (2 * PIXEL_WORLD_SIZE);
+  // 고정 world-space 거리(~2 units)로 샘플링 → 해상도 무관하게 동일한 법선 결과
+  const normalStep = Math.max(1, Math.round(2.0 / pixelWorldSize));
+  const heightLeft  = sampleHeight(hm, hmX - normalStep, hmY);
+  const heightRight = sampleHeight(hm, hmX + normalStep, hmY);
+  const heightDown  = sampleHeight(hm, hmX, hmY - normalStep);
+  const heightUp    = sampleHeight(hm, hmX, hmY + normalStep);
+  const slopeX = (heightRight - heightLeft) / (2 * normalStep * pixelWorldSize);
+  const slopeZ = (heightUp    - heightDown) / (2 * normalStep * pixelWorldSize);
   const normalX = -slopeX,
     normalY = 1.0,
     normalZ = -slopeZ;
@@ -67,6 +70,7 @@ export function buildTerrainMesh(
   // BVS: border T-junction vertex 높이를 부모 타일 선형보간값으로 snap
   // step = 인접 부모 vertex까지의 heightmap 거리 (= childStep = hmTileSize / cells)
   const bvsStep = hmTileSize / cells;
+  const pixelWorldSize = TERRAIN_SIZE / hm.width;
 
   function borderSnapHeight(hmX: number, hmY: number, row: number, col: number): number {
     if (coord.level === 0) return sampleHeight(hm, hmX, hmY);
@@ -100,7 +104,7 @@ export function buildTerrainMesh(
       const hmX = hmStartX + (col / cells) * hmTileSize;
       const hmY = hmStartY + (row / cells) * hmTileSize;
       const wy = borderSnapHeight(hmX, hmY, row, col);
-      const [normalX, normalY, normalZ] = computeHeightmapNormal(hm, hmX, hmY);
+      const [normalX, normalY, normalZ] = computeHeightmapNormal(hm, hmX, hmY, pixelWorldSize);
 
       positions.push(wx, wy, wz);
       normals.push(normalX, normalY, normalZ);

@@ -207,5 +207,6 @@ ls -R src/
 | 18   | `18_debug-camera-bugfix.md`   | 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)   |
 | 19   | `19_code-review-3.md`         | 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석) |
 | 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)      |
+| 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                            |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
