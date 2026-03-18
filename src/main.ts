@@ -13,7 +13,7 @@ import { LocalGridTiling } from "./engine/tiling/LocalGridTiling";
 import { LODSelector } from "./engine/lod/LODSelector";
 import { TerrainTileManager } from "./engine/terrain/TerrainTileManager";
 import { TerrainRenderer } from "./engine/renderer/TerrainRenderer";
-import { loadHeightmap } from "./engine/terrain/TerrainMeshBuilder";
+import { loadHeightmap } from "./engine/heightmap/HeightmapLoader";
 import { DebugCameraOverlay } from "./engine/debug/DebugCameraOverlay";
 
 async function main() {

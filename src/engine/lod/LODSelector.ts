@@ -43,6 +43,7 @@ export class LODSelector {
     const effectiveDepth = Math.max(depth, euclidean * 0.5);
 
     // 카메라 뒤 또는 near plane 이내: 세분화 불필요 (화면 영향 없음)
+    // 1.2는 Babylon.js 기본 near plane(~1.0)보다 약간 큰 값으로, near clip 직전 타일 처리 안정화용
     if (effectiveDepth < 1.2) return true;
 
     const geometricError = bounds.size / 2;

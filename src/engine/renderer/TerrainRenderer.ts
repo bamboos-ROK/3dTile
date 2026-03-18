@@ -10,7 +10,7 @@ import type { LODSelector } from '../lod/LODSelector';
 import type { TilingScheme } from '../tiling/TilingScheme';
 import type { CameraController } from '../camera/CameraController';
 import { HEIGHT_SCALE } from '../constants';
-import type { CoarserBorders } from '../terrain/TerrainMeshBuilder';
+import type { CoarserBorders } from '../terrain/TerrainTile';
 
 /**
  * 매 프레임 Quadtree Traversal을 수행하여
@@ -71,6 +71,7 @@ export class TerrainRenderer {
     for (const key of cachedKeys) {
       if (!visibleKeys.has(key)) {
         this.tileManager.dispose(parseTileKey(key));
+        this.bbCache.delete(key);
       }
     }
 
@@ -123,7 +124,8 @@ export class TerrainRenderer {
     for (const c of visibleCoords) coordsByKey.set(tileKey(c), c);
 
     let changed = true;
-    while (changed) {
+    let iterations = 0;
+    while (changed && iterations++ < 20) {
       changed = false;
       for (const coord of [...visibleCoords]) {
         const maxTiles = 2 ** coord.level;

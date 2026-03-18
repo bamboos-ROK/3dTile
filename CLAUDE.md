@@ -23,11 +23,13 @@ Tile/
     ├── main.ts
     └── engine/
         ├── camera/CameraController.ts
+        ├── heightmap/
+        │   └── HeightmapLoader.ts ← HeightmapData, loadHeightmap
         ├── tiling/
-        │   ├── TilingScheme.ts    ← interface
+        │   ├── TilingScheme.ts    ← interface, TileBounds
         │   └── LocalGridTiling.ts
         ├── terrain/
-        │   ├── TerrainTile.ts     ← TileCoord, TileState, TerrainTile
+        │   ├── TerrainTile.ts     ← TileCoord, TileState, TerrainTile, CoarserBorders
         │   ├── TerrainTileManager.ts
         │   └── TerrainMeshBuilder.ts
         ├── lod/LODSelector.ts
@@ -203,5 +205,7 @@ ls -R src/
 | 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                               |
 | 17   | `17_lod-seam-fix.md`          | LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)             |
 | 18   | `18_debug-camera-bugfix.md`   | 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)   |
+| 19   | `19_code-review-3.md`         | 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석) |
+| 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)      |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

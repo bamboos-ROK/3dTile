@@ -2,7 +2,8 @@ import type { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { TerrainTile, TileState, tileKey } from './TerrainTile';
 import type { TileCoord } from './TerrainTile';
-import type { HeightmapData, CoarserBorders } from './TerrainMeshBuilder';
+import type { CoarserBorders } from './TerrainTile';
+import type { HeightmapData } from '../heightmap/HeightmapLoader';
 import { buildTerrainMesh } from './TerrainMeshBuilder';
 import type { TilingScheme } from '../tiling/TilingScheme';
 
@@ -73,10 +74,10 @@ export class TerrainTileManager {
   /** 현재 visible set 기준으로 가시성 업데이트 */
   updateVisibility(visibleKeys: Set<string>): void {
     for (const [key, tile] of this.cache) {
-      if (!visibleKeys.has(key)) continue;
       if (!tile.mesh) continue;
-      tile.mesh.isVisible = true;
-      tile.state = TileState.Visible;
+      const visible = visibleKeys.has(key);
+      tile.mesh.isVisible = visible;
+      tile.state = visible ? TileState.Visible : TileState.Active;
     }
   }
 

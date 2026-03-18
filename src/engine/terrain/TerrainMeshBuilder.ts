@@ -2,42 +2,10 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import type { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import type { Scene } from "@babylonjs/core/scene";
-import type { TileCoord } from "./TerrainTile";
+import type { TileCoord, CoarserBorders } from "./TerrainTile";
 import { tileKey } from "./TerrainTile";
 import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION, PIXEL_WORLD_SIZE } from "../constants";
-
-export interface HeightmapData {
-  pixels: Uint8ClampedArray;
-  width: number;
-  height: number;
-}
-
-/** 각 방향의 이웃 타일이 1레벨 더 거친지(level-1) 여부 */
-export interface CoarserBorders {
-  N: boolean;
-  S: boolean;
-  W: boolean;
-  E: boolean;
-}
-
-/** heightmap PNG를 로드하여 픽셀 데이터 반환 */
-export async function loadHeightmap(url: string): Promise<HeightmapData> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, img.width, img.height);
-
-      resolve({ pixels: imageData.data, width: img.width, height: img.height });
-    };
-    img.onerror = () => reject(new Error(`Failed to load heightmap: ${url}`));
-    img.src = url;
-  });
-}
+import type { HeightmapData } from "../heightmap/HeightmapLoader";
 
 /** heightmap 픽셀 좌표에서 높이값 샘플링 (0~HEIGHT_SCALE) */
 function sampleHeight(hm: HeightmapData, px: number, py: number): number {
@@ -179,7 +147,7 @@ export function buildTerrainMesh(
         Math.abs(sampleHeight(hm, px - r, py) - h),
         Math.abs(sampleHeight(hm, px, py + r) - h),
         Math.abs(sampleHeight(hm, px, py - r) - h),
-      ) + 2;
+      ) + 2; // +2: 부동소수점 오차와 수직 절벽에서 skirt가 짧아질 경우를 대비한 최소 여유값
       positions.push(
         positions[vi * 3],
         positions[vi * 3 + 1] - depth,
