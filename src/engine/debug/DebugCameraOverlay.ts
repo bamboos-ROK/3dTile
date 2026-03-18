@@ -66,12 +66,14 @@ export class DebugCameraOverlay {
   toggle(): void {
     this.isDebugOn = !this.isDebugOn;
     if (this.isDebugOn) {
+      this.mainCamera.camera.detachControl();
       this.scene.activeCamera = this.debugCamera;
       this.debugCamera.attachControl(this.canvas, true);
     } else {
+      this.debugCamera.detachControl();
       this.scene.activeCamera = this.mainCamera.camera;
       this.mainCamera.camera.attachControl(this.canvas, true);
-      this.debugCamera.detachControl();
+      this.mainCamera.camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
       this.restoreAllMaterials();
     }
   }
@@ -92,12 +94,14 @@ export class DebugCameraOverlay {
     }
 
     for (const key of visibleKeys) {
-      if (this.originalMaterials.has(key)) continue;
-
       const tile = this.tileManager.getTile(key);
       if (!tile?.mesh) continue;
 
-      this.originalMaterials.set(key, tile.mesh.material);
+      // 원본 material은 처음 한 번만 저장
+      if (!this.originalMaterials.has(key)) {
+        this.originalMaterials.set(key, tile.mesh.material);
+      }
+      // 매 프레임 적용 — 타일 재생성 시에도 자동으로 LOD 색상 유지
       tile.mesh.material = this.getLodMaterial(parseTileKey(key).level);
     }
   }

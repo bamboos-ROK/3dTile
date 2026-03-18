@@ -48,6 +48,7 @@ export class CameraController {
   }
 
   private updateMovement(): void {
+    if (this.scene.activeCamera !== this.camera) return;
     const fwd =
       this.keysDown.has("KeyW") || this.keysDown.has("ArrowUp") ? 1 : 0;
     const bwd =
