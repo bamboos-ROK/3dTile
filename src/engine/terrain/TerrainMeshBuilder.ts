@@ -12,6 +12,14 @@ export interface HeightmapData {
   height: number;
 }
 
+/** 각 방향의 이웃 타일이 1레벨 더 거친지(level-1) 여부 */
+export interface CoarserBorders {
+  N: boolean;
+  S: boolean;
+  W: boolean;
+  E: boolean;
+}
+
 /** heightmap PNG를 로드하여 픽셀 데이터 반환 */
 export async function loadHeightmap(url: string): Promise<HeightmapData> {
   return new Promise((resolve, reject) => {
@@ -73,6 +81,7 @@ export function buildTerrainMesh(
   worldMinZ: number,
   worldTileSize: number,
   material: StandardMaterial,
+  coarserBorders: CoarserBorders = { N: false, S: false, W: false, E: false },
 ): Mesh {
   const n = VERTEX_RESOLUTION; // 32
   const cells = n - 1; // 31
@@ -87,6 +96,31 @@ export function buildTerrainMesh(
   const uvs: number[] = [];
   const indices: number[] = [];
 
+  // BVS: border T-junction vertex 높이를 부모 타일 선형보간값으로 snap
+  // step = 인접 부모 vertex까지의 heightmap 거리 (= childStep = hmTileSize / cells)
+  const bvsStep = hmTileSize / cells;
+
+  function borderSnapHeight(px: number, py: number, row: number, col: number): number {
+    if (coord.level === 0) return sampleHeight(hm, px, py);
+    // BVS는 이웃이 1레벨 더 거친(coarser) 방향의 border에만 적용한다.
+    // 이웃이 같은 레벨이거나 더 세밀하면 이 타일이 "기준"이므로 raw 높이를 써야 한다.
+    const onCoarserNS =
+      (row === 0 && coarserBorders.N) || (row === cells && coarserBorders.S);
+    const onCoarserWE =
+      (col === 0 && coarserBorders.W) || (col === cells && coarserBorders.E);
+    if (!onCoarserNS && !onCoarserWE) return sampleHeight(hm, px, py);
+    const isTJ_col = onCoarserNS && (col + coord.tileX) % 2 !== 0;
+    const isTJ_row = onCoarserWE && (row + coord.tileY) % 2 !== 0;
+    if (isTJ_col && isTJ_row) {
+      const hX = (sampleHeight(hm, px - bvsStep, py) + sampleHeight(hm, px + bvsStep, py)) / 2;
+      const hZ = (sampleHeight(hm, px, py - bvsStep) + sampleHeight(hm, px, py + bvsStep)) / 2;
+      return (hX + hZ) / 2;
+    }
+    if (isTJ_col) return (sampleHeight(hm, px - bvsStep, py) + sampleHeight(hm, px + bvsStep, py)) / 2;
+    if (isTJ_row) return (sampleHeight(hm, px, py - bvsStep) + sampleHeight(hm, px, py + bvsStep)) / 2;
+    return sampleHeight(hm, px, py);
+  }
+
   // vertices 생성
   for (let row = 0; row < n; row++) {
     for (let col = 0; col < n; col++) {
@@ -97,7 +131,7 @@ export function buildTerrainMesh(
       // heightmap 픽셀 좌표
       const px = hmStartX + (col / cells) * hmTileSize;
       const py = hmStartY + (row / cells) * hmTileSize;
-      const wy = sampleHeight(hm, px, py);
+      const wy = borderSnapHeight(px, py, row, col);
       const [nx, ny, nz] = computeHeightmapNormal(hm, px, py);
 
       positions.push(wx, wy, wz);
@@ -138,12 +172,13 @@ export function buildTerrainMesh(
       const row = Math.floor(vi / n);
       const px = hmStartX + (col / cells) * hmTileSize;
       const py = hmStartY + (row / cells) * hmTileSize;
-      const h = sampleHeight(hm, px, py);
+      const h = positions[vi * 3 + 1]; // BVS-snapped 높이
+      const r = Math.max(bvsStep / 2, 1); // halfSpacing: 2+ level 차이 안전망
       const depth = Math.max(
-        Math.abs(sampleHeight(hm, px + 1, py) - h),
-        Math.abs(sampleHeight(hm, px - 1, py) - h),
-        Math.abs(sampleHeight(hm, px, py + 1) - h),
-        Math.abs(sampleHeight(hm, px, py - 1) - h),
+        Math.abs(sampleHeight(hm, px + r, py) - h),
+        Math.abs(sampleHeight(hm, px - r, py) - h),
+        Math.abs(sampleHeight(hm, px, py + r) - h),
+        Math.abs(sampleHeight(hm, px, py - r) - h),
       ) + 2;
       positions.push(
         positions[vi * 3],

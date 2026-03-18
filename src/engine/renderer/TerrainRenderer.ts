@@ -10,6 +10,7 @@ import type { LODSelector } from '../lod/LODSelector';
 import type { TilingScheme } from '../tiling/TilingScheme';
 import type { CameraController } from '../camera/CameraController';
 import { HEIGHT_SCALE } from '../constants';
+import type { CoarserBorders } from '../terrain/TerrainMeshBuilder';
 
 /**
  * 매 프레임 Quadtree Traversal을 수행하여
@@ -56,9 +57,13 @@ export class TerrainRenderer {
     const visibleCoords: TileCoord[] = [];
     this.traverse(this.tiling.getRoot(), cameraPos, frustumPlanes, visibleKeys, visibleCoords, projFactor, forwardVec);
 
+    // 2-1. LOD Consistency: 인접 타일 레벨 차이를 최대 1로 제한
+    this.enforceConsistency(visibleKeys, visibleCoords);
+
     // 3. 새로 필요한 타일 생성
     for (const coord of visibleCoords) {
-      this.tileManager.getOrCreate(coord);
+      const coarserBorders = this.computeCoarserBorders(coord, visibleKeys);
+      this.tileManager.getOrCreate(coord, coarserBorders);
     }
 
     // 4. 더 이상 필요 없는 타일 제거
@@ -76,6 +81,104 @@ export class TerrainRenderer {
 
   get visibleTileKeys(): ReadonlySet<string> {
     return this.lastVisibleKeys;
+  }
+
+  /**
+   * 타일의 4방향 이웃이 1레벨 더 거친지(level-1) 판별
+   * BVS는 coarser 방향에만 적용되어야 한다.
+   */
+  private computeCoarserBorders(coord: TileCoord, visibleKeys: Set<string>): CoarserBorders {
+    const { tileX: tx, tileY: ty, level: L } = coord;
+    const maxTiles = 2 ** L;
+
+    const isCoarser = (nbTx: number, nbTy: number): boolean => {
+      if (nbTx < 0 || nbTy < 0 || nbTx >= maxTiles || nbTy >= maxTiles) return false;
+      if (visibleKeys.has(tileKey({ tileX: nbTx, tileY: nbTy, level: L }))) return false;
+      if (L > 0) {
+        return visibleKeys.has(tileKey({
+          tileX: Math.floor(nbTx / 2),
+          tileY: Math.floor(nbTy / 2),
+          level: L - 1,
+        }));
+      }
+      return false;
+    };
+
+    return {
+      N: isCoarser(tx, ty - 1),
+      S: isCoarser(tx, ty + 1),
+      W: isCoarser(tx - 1, ty),
+      E: isCoarser(tx + 1, ty),
+    };
+  }
+
+  /**
+   * LOD Consistency Enforcement
+   *
+   * 인접 타일의 LOD 레벨 차이가 2 이상인 경우 coarse 타일을 강제 분할하여
+   * 인접 차이를 최대 1로 제한한다. BVS가 항상 올바르게 동작하도록 보장.
+   */
+  private enforceConsistency(visibleKeys: Set<string>, visibleCoords: TileCoord[]): void {
+    const coordsByKey = new Map<string, TileCoord>();
+    for (const c of visibleCoords) coordsByKey.set(tileKey(c), c);
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const coord of [...visibleCoords]) {
+        const maxTiles = 2 ** coord.level;
+        const sameNeighbors: TileCoord[] = [
+          { tileX: coord.tileX - 1, tileY: coord.tileY, level: coord.level },
+          { tileX: coord.tileX + 1, tileY: coord.tileY, level: coord.level },
+          { tileX: coord.tileX, tileY: coord.tileY - 1, level: coord.level },
+          { tileX: coord.tileX, tileY: coord.tileY + 1, level: coord.level },
+        ];
+
+        for (const nb of sameNeighbors) {
+          if (nb.tileX < 0 || nb.tileY < 0 || nb.tileX >= maxTiles || nb.tileY >= maxTiles) continue;
+          if (coordsByKey.has(tileKey(nb))) continue; // 같은 레벨 이웃 존재 → OK
+
+          // nb 위치를 담당하는 visible ancestor 탐색
+          for (let aLevel = coord.level - 1; aLevel >= 0; aLevel--) {
+            const scale = 2 ** (coord.level - aLevel);
+            const ancestor: TileCoord = {
+              tileX: Math.floor(nb.tileX / scale),
+              tileY: Math.floor(nb.tileY / scale),
+              level: aLevel,
+            };
+            const aKey = tileKey(ancestor);
+            if (!coordsByKey.has(aKey)) continue;
+
+            if (coord.level - aLevel > 1) {
+              // ancestor 제거 후 4개 children 추가
+              coordsByKey.delete(aKey);
+              visibleKeys.delete(aKey);
+              const idx = visibleCoords.findIndex(c => tileKey(c) === aKey);
+              if (idx !== -1) visibleCoords.splice(idx, 1);
+
+              const childLevel = aLevel + 1;
+              for (let cx = 0; cx < 2; cx++) {
+                for (let cy = 0; cy < 2; cy++) {
+                  const child: TileCoord = {
+                    tileX: ancestor.tileX * 2 + cx,
+                    tileY: ancestor.tileY * 2 + cy,
+                    level: childLevel,
+                  };
+                  const childKey = tileKey(child);
+                  if (!coordsByKey.has(childKey)) {
+                    coordsByKey.set(childKey, child);
+                    visibleKeys.add(childKey);
+                    visibleCoords.push(child);
+                  }
+                }
+              }
+              changed = true;
+            }
+            break;
+          }
+        }
+      }
+    }
   }
 
   /**

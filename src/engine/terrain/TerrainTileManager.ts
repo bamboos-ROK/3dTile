@@ -2,12 +2,13 @@ import type { Scene } from '@babylonjs/core/scene';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { TerrainTile, TileState, tileKey } from './TerrainTile';
 import type { TileCoord } from './TerrainTile';
-import type { HeightmapData } from './TerrainMeshBuilder';
+import type { HeightmapData, CoarserBorders } from './TerrainMeshBuilder';
 import { buildTerrainMesh } from './TerrainMeshBuilder';
 import type { TilingScheme } from '../tiling/TilingScheme';
 
 export class TerrainTileManager {
   private readonly cache = new Map<string, TerrainTile>();
+  private readonly bordersCache = new Map<string, string>(); // key → "NSWE" 비트 문자열
   private readonly scene: Scene;
   private readonly tiling: TilingScheme;
   private readonly heightmap: HeightmapData;
@@ -20,15 +21,24 @@ export class TerrainTileManager {
     this.material = material;
   }
 
-  /** 타일 캐시에서 가져오거나 새로 생성하여 Active 상태로 만든다 */
-  getOrCreate(coord: TileCoord): TerrainTile {
+  /** 타일 캐시에서 가져오거나 새로 생성하여 Active 상태로 만든다.
+   *  coarserBorders가 이전과 다르면 기존 mesh를 버리고 재생성한다. */
+  getOrCreate(coord: TileCoord, coarserBorders: CoarserBorders): TerrainTile {
     const key = tileKey(coord);
+    const bordersKey = `${+coarserBorders.N}${+coarserBorders.S}${+coarserBorders.W}${+coarserBorders.E}`;
+
+    // coarserBorders가 바뀌면 기존 mesh 폐기 후 재생성
+    if (this.cache.has(key) && this.bordersCache.get(key) !== bordersKey) {
+      this.dispose(coord);
+    }
+
     if (this.cache.has(key)) {
       return this.cache.get(key)!;
     }
 
     const tile = new TerrainTile(coord);
     this.cache.set(key, tile);
+    this.bordersCache.set(key, bordersKey);
 
     const bounds = this.tiling.tileBoundsToWorld(coord);
     const mesh = buildTerrainMesh(
@@ -39,6 +49,7 @@ export class TerrainTileManager {
       bounds.minZ,
       bounds.size,
       this.material,
+      coarserBorders,
     );
 
     tile.mesh = mesh;
@@ -56,6 +67,7 @@ export class TerrainTileManager {
 
     tile.mesh?.dispose();
     this.cache.delete(key);
+    this.bordersCache.delete(key);
   }
 
   /** 현재 visible set 기준으로 가시성 업데이트 */

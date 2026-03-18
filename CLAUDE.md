@@ -201,5 +201,6 @@ ls -R src/
 | 14   | `14_arc-rotate-camera.md`     | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)  |
 | 15   | `15_debug-camera.md`          | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)                                        |
 | 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                               |
+| 17   | `17_lod-seam-fix.md`          | LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)             |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
