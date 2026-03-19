@@ -86,7 +86,7 @@ export class TerrainRenderer {
 
   /**
    * 타일의 4방향 이웃이 1레벨 더 거친지(level-1) 판별
-   * BVS는 coarser 방향에만 적용되어야 한다.
+   * T-junction 제거는 coarser 방향에만 적용되어야 한다.
    */
   private computeCoarserBorders(coord: TileCoord, visibleKeys: Set<string>): CoarserBorders {
     const { tileX: tx, tileY: ty, level: lvl } = coord;
@@ -117,7 +117,7 @@ export class TerrainRenderer {
    * LOD Consistency Enforcement
    *
    * 인접 타일의 LOD 레벨 차이가 2 이상인 경우 coarse 타일을 강제 분할하여
-   * 인접 차이를 최대 1로 제한한다. BVS가 항상 올바르게 동작하도록 보장.
+   * 인접 차이를 최대 1로 제한한다. T-junction 제거가 항상 올바르게 동작하도록 보장.
    */
   private enforceConsistency(visibleKeys: Set<string>, visibleCoords: TileCoord[]): void {
     const coordsByKey = new Map<string, TileCoord>();

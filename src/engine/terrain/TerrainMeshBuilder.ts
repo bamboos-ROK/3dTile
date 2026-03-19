@@ -24,16 +24,18 @@ function computeHeightmapNormal(
 ): [number, number, number] {
   // 고정 world-space 거리(~2 units)로 샘플링 → 해상도 무관하게 동일한 법선 결과
   const normalStep = Math.max(1, Math.round(2.0 / pixelWorldSize));
-  const heightLeft  = sampleHeight(hm, hmX - normalStep, hmY);
+  const heightLeft = sampleHeight(hm, hmX - normalStep, hmY);
   const heightRight = sampleHeight(hm, hmX + normalStep, hmY);
-  const heightDown  = sampleHeight(hm, hmX, hmY - normalStep);
-  const heightUp    = sampleHeight(hm, hmX, hmY + normalStep);
+  const heightDown = sampleHeight(hm, hmX, hmY - normalStep);
+  const heightUp = sampleHeight(hm, hmX, hmY + normalStep);
   const slopeX = (heightRight - heightLeft) / (2 * normalStep * pixelWorldSize);
-  const slopeZ = (heightUp    - heightDown) / (2 * normalStep * pixelWorldSize);
+  const slopeZ = (heightUp - heightDown) / (2 * normalStep * pixelWorldSize);
   const normalX = -slopeX,
     normalY = 1.0,
     normalZ = -slopeZ;
-  const len = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+  const len = Math.sqrt(
+    normalX * normalX + normalY * normalY + normalZ * normalZ,
+  );
   return [normalX / len, normalY / len, normalZ / len];
 }
 
@@ -67,14 +69,19 @@ export function buildTerrainMesh(
   const uvs: number[] = [];
   const indices: number[] = [];
 
-  // BVS: border T-junction vertex 높이를 부모 타일 선형보간값으로 snap
+  // T-junction 제거: 경계 정점 높이를 인접 coarse 타일 정점의 선형보간값으로 교체
   // step = 인접 부모 vertex까지의 heightmap 거리 (= childStep = hmTileSize / cells)
-  const bvsStep = hmTileSize / cells;
+  const tjStep = hmTileSize / cells;
   const pixelWorldSize = TERRAIN_SIZE / hm.width;
 
-  function borderSnapHeight(hmX: number, hmY: number, row: number, col: number): number {
+  function eliminateTJunction(
+    hmX: number,
+    hmY: number,
+    row: number,
+    col: number,
+  ): number {
     if (coord.level === 0) return sampleHeight(hm, hmX, hmY);
-    // BVS는 이웃이 1레벨 더 거친(coarser) 방향의 border에만 적용한다.
+    // T-junction 제거는 이웃이 1레벨 더 거친(coarser) 방향의 border에만 적용한다.
     // 이웃이 같은 레벨이거나 더 세밀하면 이 타일이 "기준"이므로 raw 높이를 써야 한다.
     const onCoarserNS =
       (row === 0 && coarserBorders.N) || (row === cells && coarserBorders.S);
@@ -84,12 +91,28 @@ export function buildTerrainMesh(
     const isTJ_col = onCoarserNS && (col + coord.tileX) % 2 !== 0;
     const isTJ_row = onCoarserWE && (row + coord.tileY) % 2 !== 0;
     if (isTJ_col && isTJ_row) {
-      const hX = (sampleHeight(hm, hmX - bvsStep, hmY) + sampleHeight(hm, hmX + bvsStep, hmY)) / 2;
-      const hZ = (sampleHeight(hm, hmX, hmY - bvsStep) + sampleHeight(hm, hmX, hmY + bvsStep)) / 2;
-      return (hX + hZ) / 2;
+      const interpolatedHeightX =
+        (sampleHeight(hm, hmX - tjStep, hmY) +
+          sampleHeight(hm, hmX + tjStep, hmY)) /
+        2;
+      const interpolatedHeightZ =
+        (sampleHeight(hm, hmX, hmY - tjStep) +
+          sampleHeight(hm, hmX, hmY + tjStep)) /
+        2;
+      return (interpolatedHeightX + interpolatedHeightZ) / 2;
     }
-    if (isTJ_col) return (sampleHeight(hm, hmX - bvsStep, hmY) + sampleHeight(hm, hmX + bvsStep, hmY)) / 2;
-    if (isTJ_row) return (sampleHeight(hm, hmX, hmY - bvsStep) + sampleHeight(hm, hmX, hmY + bvsStep)) / 2;
+    if (isTJ_col)
+      return (
+        (sampleHeight(hm, hmX - tjStep, hmY) +
+          sampleHeight(hm, hmX + tjStep, hmY)) /
+        2
+      );
+    if (isTJ_row)
+      return (
+        (sampleHeight(hm, hmX, hmY - tjStep) +
+          sampleHeight(hm, hmX, hmY + tjStep)) /
+        2
+      );
     return sampleHeight(hm, hmX, hmY);
   }
 
@@ -97,81 +120,40 @@ export function buildTerrainMesh(
   for (let row = 0; row < n; row++) {
     for (let col = 0; col < n; col++) {
       // world 좌표
-      const wx = worldMinX + (col / cells) * worldTileSize;
-      const wz = worldMinZ + (row / cells) * worldTileSize;
+      const worldX = worldMinX + (col / cells) * worldTileSize;
+      const worldZ = worldMinZ + (row / cells) * worldTileSize;
 
       // heightmap 픽셀 좌표
       const hmX = hmStartX + (col / cells) * hmTileSize;
       const hmY = hmStartY + (row / cells) * hmTileSize;
-      const wy = borderSnapHeight(hmX, hmY, row, col);
-      const [normalX, normalY, normalZ] = computeHeightmapNormal(hm, hmX, hmY, pixelWorldSize);
+      const worldY = eliminateTJunction(hmX, hmY, row, col);
+      const [normalX, normalY, normalZ] = computeHeightmapNormal(
+        hm,
+        hmX,
+        hmY,
+        pixelWorldSize,
+      );
 
-      positions.push(wx, wy, wz);
+      positions.push(worldX, worldY, worldZ);
       normals.push(normalX, normalY, normalZ);
-      uvs.push((wz + TERRAIN_SIZE / 2) / TERRAIN_SIZE, 1.0 - (wx + TERRAIN_SIZE / 2) / TERRAIN_SIZE);
+      uvs.push(
+        (worldZ + TERRAIN_SIZE / 2) / TERRAIN_SIZE,
+        1.0 - (worldX + TERRAIN_SIZE / 2) / TERRAIN_SIZE,
+      );
     }
   }
 
   // triangle indices (cell당 2개 삼각형)
   for (let row = 0; row < cells; row++) {
     for (let col = 0; col < cells; col++) {
-      const tl = row * n + col;
-      const tr = tl + 1;
-      const bl = tl + n;
-      const br = bl + 1;
+      const topLeft = row * n + col;
+      const topRight = topLeft + 1;
+      const bottomLeft = topLeft + n;
+      const bottomRight = bottomLeft + 1;
       // 삼각형 1 (CCW from above = front face, normals UP)
-      indices.push(tl, tr, bl);
+      indices.push(topLeft, topRight, bottomLeft);
       // 삼각형 2
-      indices.push(tr, br, bl);
-    }
-  }
-
-  // skirt: 4변에 아래로 내려가는 수직 geometry 추가 → LOD 전환 경계 틈 은폐
-  // 깊이는 버텍스별 heightmap 주변 1픽셀 최대 높이 변화량으로 계산 → 틈 커버 + 지형 아래 노출 최소화
-  const skirtEdges = [
-    Array.from({ length: n }, (_, i) => i), // North (row=0)
-    Array.from({ length: n }, (_, i) => (n - 1) * n + i), // South (row=n-1)
-    Array.from({ length: n }, (_, i) => i * n), // West  (col=0)
-    Array.from({ length: n }, (_, i) => i * n + (n - 1)), // East  (col=n-1)
-  ];
-  for (let edgeIdx = 0; edgeIdx < skirtEdges.length; edgeIdx++) {
-    const edgeIndices = skirtEdges[edgeIdx];
-    const reversed = edgeIdx === 1 || edgeIdx === 2; // South, West는 법선이 안쪽 → 역순 와인딩
-    const skirtBase = positions.length / 3;
-    for (let i = 0; i < edgeIndices.length; i++) {
-      const vi = edgeIndices[i];
-      const col = vi % n;
-      const row = Math.floor(vi / n);
-      const hmX = hmStartX + (col / cells) * hmTileSize;
-      const hmY = hmStartY + (row / cells) * hmTileSize;
-      const h = positions[vi * 3 + 1]; // BVS-snapped 높이
-      const r = Math.max(bvsStep / 2, 1); // halfSpacing: 2+ level 차이 안전망
-      const depth = Math.max(
-        Math.abs(sampleHeight(hm, hmX + r, hmY) - h),
-        Math.abs(sampleHeight(hm, hmX - r, hmY) - h),
-        Math.abs(sampleHeight(hm, hmX, hmY + r) - h),
-        Math.abs(sampleHeight(hm, hmX, hmY - r) - h),
-      ) + 2; // +2: 부동소수점 오차와 수직 절벽에서 skirt가 짧아질 경우를 대비한 최소 여유값
-      positions.push(
-        positions[vi * 3],
-        positions[vi * 3 + 1] - depth,
-        positions[vi * 3 + 2],
-      );
-      normals.push(normals[vi * 3], normals[vi * 3 + 1], normals[vi * 3 + 2]);
-      uvs.push(uvs[vi * 2], uvs[vi * 2 + 1]);
-    }
-    for (let i = 0; i < n - 1; i++) {
-      const topA = edgeIndices[i],
-        topB = edgeIndices[i + 1];
-      const botA = skirtBase + i,
-        botB = skirtBase + i + 1;
-      if (reversed) {
-        indices.push(topA, botA, topB);
-        indices.push(topB, botA, botB);
-      } else {
-        indices.push(topA, topB, botA);
-        indices.push(topB, botB, botA);
-      }
+      indices.push(topRight, bottomRight, bottomLeft);
     }
   }
 
