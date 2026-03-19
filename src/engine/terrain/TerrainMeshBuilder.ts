@@ -7,12 +7,27 @@ import { tileKey } from "./TerrainTile";
 import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION } from "../constants";
 import type { HeightmapData } from "../heightmap/HeightmapLoader";
 
-/** heightmap 픽셀 좌표에서 높이값 샘플링 (0~HEIGHT_SCALE) */
-function sampleHeight(hm: HeightmapData, hmX: number, hmY: number): number {
-  const x = Math.min(Math.max(Math.floor(hmX), 0), hm.width - 1);
-  const y = Math.min(Math.max(Math.floor(hmY), 0), hm.height - 1);
-  const idx = (y * hm.width + x) * 4; // RGBA
+/** heightmap 픽셀 좌표에서 높이값 샘플링 (nearest-neighbor) */
+function sampleHeightNearest(hm: HeightmapData, x: number, y: number): number {
+  const px = Math.min(Math.max(x, 0), hm.width - 1);
+  const py = Math.min(Math.max(y, 0), hm.height - 1);
+  const idx = (py * hm.width + px) * 4; // RGBA
   return (hm.pixels[idx] / 255) * HEIGHT_SCALE;
+}
+
+/** heightmap 픽셀 좌표에서 높이값 샘플링 (bilinear interpolation) */
+function sampleHeight(hm: HeightmapData, hmX: number, hmY: number): number {
+  const x0 = Math.floor(hmX);
+  const y0 = Math.floor(hmY);
+  const x1 = x0 + 1;
+  const y1 = y0 + 1;
+  const tx = hmX - x0;
+  const ty = hmY - y0;
+  const h00 = sampleHeightNearest(hm, x0, y0);
+  const h10 = sampleHeightNearest(hm, x1, y0);
+  const h01 = sampleHeightNearest(hm, x0, y1);
+  const h11 = sampleHeightNearest(hm, x1, y1);
+  return h00 * (1 - tx) * (1 - ty) + h10 * tx * (1 - ty) + h01 * (1 - tx) * ty + h11 * tx * ty;
 }
 
 /** heightmap 픽셀 좌표에서 전역 법선 계산 (중앙차분법) */

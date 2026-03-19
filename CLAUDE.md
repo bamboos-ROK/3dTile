@@ -55,7 +55,7 @@ Tile/
 - 해상도: 256×256 px, 흑백 PNG
 - 위치: `public/heightmap.png`
 - 로드 방식: Canvas 2D API (`getImageData`)
-- 높이 계산: `height = pixelValue / 255 * heightScale` (heightScale = 480)
+- 높이 계산: `height = pixelValue / 255 * heightScale` (heightScale = 255)
 
 ### Tile 스펙
 
@@ -184,29 +184,29 @@ ls -R src/
 
 `docs/` 폴더에 생성 순서대로 번호를 붙여 저장한다.
 
-| 번호 | 파일                          | 설명                                                                                         |
-| ---- | ----------------------------- | -------------------------------------------------------------------------------------------- |
-| 00   | `00_PRD.md`                   | 최초 PRD (원본)                                                                              |
-| 01   | `01_tile-lod-terrain-plan.md` | 1차 구현 계획                                                                                |
-| 02   | `02_debug-history.md`         | 초기 버그 디버깅 히스토리                                                                    |
-| 03   | `03_visual-quality-plan.md`   | 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러)                                         |
-| 04   | `04_lod-camera-bugfix.md`     | LOD 기준점 버그 수정 (camera.position → camera.target)                                       |
-| 05   | `05_wheel-lod-bugfix.md`      | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling)            |
-| 06   | `06_diffuse-texture.md`       | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거)                        |
-| 07   | `07_rts-camera.md`            | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용)                                            |
-| 08   | `08_uv-offset-bugfix.md`      | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제)                              |
-| 09   | `09_tile-seam-fix.md`         | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함)                     |
-| 10   | `10_refactor-code-review.md`  | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등)                 |
-| 11   | `11_lod-sse.md`               | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=150 확정)        |
-| 12   | `12_code-review-2.md`         | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거) |
-| 13   | `13_prd-comparison.md`        | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성)                        |
-| 14   | `14_arc-rotate-camera.md`     | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)  |
-| 15   | `15_debug-camera.md`          | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)                                        |
-| 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                               |
-| 17   | `17_lod-seam-fix.md`          | LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)             |
-| 18   | `18_debug-camera-bugfix.md`   | 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)   |
+| 번호 | 파일                          | 설명                                                                                                                        |
+| ---- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 00   | `00_PRD.md`                   | 최초 PRD (원본)                                                                                                             |
+| 01   | `01_tile-lod-terrain-plan.md` | 1차 구현 계획                                                                                                               |
+| 02   | `02_debug-history.md`         | 초기 버그 디버깅 히스토리                                                                                                   |
+| 03   | `03_visual-quality-plan.md`   | 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러)                                                                        |
+| 04   | `04_lod-camera-bugfix.md`     | LOD 기준점 버그 수정 (camera.position → camera.target)                                                                      |
+| 05   | `05_wheel-lod-bugfix.md`      | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling)                                           |
+| 06   | `06_diffuse-texture.md`       | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거)                                                       |
+| 07   | `07_rts-camera.md`            | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용)                                                                           |
+| 08   | `08_uv-offset-bugfix.md`      | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제)                                                             |
+| 09   | `09_tile-seam-fix.md`         | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함)                                                    |
+| 10   | `10_refactor-code-review.md`  | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등)                                                |
+| 11   | `11_lod-sse.md`               | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=150 확정)                                       |
+| 12   | `12_code-review-2.md`         | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거)                                |
+| 13   | `13_prd-comparison.md`        | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성)                                                       |
+| 14   | `14_arc-rotate-camera.md`     | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)                                 |
+| 15   | `15_debug-camera.md`          | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)                                                                       |
+| 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                                                              |
+| 17   | `17_lod-seam-fix.md`          | LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)                                            |
+| 18   | `18_debug-camera-bugfix.md`   | 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)                                  |
 | 19   | `19_code-review-3.md`         | 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석) |
-| 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)      |
-| 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                            |
+| 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)                                    |
+| 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                                                           |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
