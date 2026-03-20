@@ -2,7 +2,7 @@
 export const TERRAIN_SIZE = 512;
 
 /** 높이맵 최대 높이 (units) */
-export const HEIGHT_SCALE = 255;
+export const HEIGHT_SCALE = 320;
 
 /** Quadtree 최대 LOD 레벨 */
 export const MAX_LOD_LEVEL = 4;

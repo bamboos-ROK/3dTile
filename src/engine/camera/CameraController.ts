@@ -15,12 +15,12 @@ export class CameraController {
 
   constructor(scene: Scene, canvas: HTMLCanvasElement) {
     this.scene = scene;
-    const initialTarget = new Vector3(217, 0, -156);
+    const initialTarget = new Vector3(0, 0, 0);
     this.camera = new ArcRotateCamera(
       "mainCamera",
-      Math.PI * 0.8,
+      Math.PI * 1.7,
       Math.PI * 0.3,
-      500,
+      800,
       initialTarget,
       scene,
     );

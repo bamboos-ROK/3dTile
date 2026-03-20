@@ -16,9 +16,16 @@ export async function loadHeightmap(url: string): Promise<HeightmapData> {
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, img.width, img.height);
       const rgba = imageData.data;
+      const raw = new Float32Array(img.width * img.height);
+      for (let i = 0; i < raw.length; i++) {
+        raw[i] = rgba[i * 4] / 255;
+      }
+      // 제공자 heightmap이 row↔col 축 반전 convention으로 export되어 있으므로 transpose 정규화
       const heights = new Float32Array(img.width * img.height);
-      for (let i = 0; i < heights.length; i++) {
-        heights[i] = rgba[i * 4] / 255;
+      for (let y = 0; y < img.height; y++) {
+        for (let x = 0; x < img.width; x++) {
+          heights[y * img.width + x] = raw[x * img.width + y];
+        }
       }
 
       resolve({ heights, width: img.width, height: img.height });
