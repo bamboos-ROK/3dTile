@@ -7,27 +7,21 @@ import { tileKey } from "./TerrainTile";
 import { HEIGHT_SCALE, TERRAIN_SIZE, VERTEX_RESOLUTION } from "../constants";
 import type { HeightmapData } from "../heightmap/HeightmapLoader";
 
-/** heightmap 픽셀 좌표에서 높이값 샘플링 (nearest-neighbor) */
-function sampleHeightNearest(hm: HeightmapData, x: number, y: number): number {
-  const px = Math.min(Math.max(x, 0), hm.width - 1);
-  const py = Math.min(Math.max(y, 0), hm.height - 1);
-  const idx = (py * hm.width + px) * 4; // RGBA
-  return (hm.pixels[idx] / 255) * HEIGHT_SCALE;
-}
-
-/** heightmap 픽셀 좌표에서 높이값 샘플링 (bilinear interpolation) */
+/** heightmap 픽셀 좌표에서 높이값 샘플링 (bilinear interpolation), 0–1 반환 */
 function sampleHeight(hm: HeightmapData, hmX: number, hmY: number): number {
-  const x0 = Math.floor(hmX);
-  const y0 = Math.floor(hmY);
-  const x1 = x0 + 1;
-  const y1 = y0 + 1;
-  const tx = hmX - x0;
-  const ty = hmY - y0;
-  const h00 = sampleHeightNearest(hm, x0, y0);
-  const h10 = sampleHeightNearest(hm, x1, y0);
-  const h01 = sampleHeightNearest(hm, x0, y1);
-  const h11 = sampleHeightNearest(hm, x1, y1);
-  return h00 * (1 - tx) * (1 - ty) + h10 * tx * (1 - ty) + h01 * (1 - tx) * ty + h11 * tx * ty;
+  const floorX = Math.floor(hmX);
+  const floorY = Math.floor(hmY);
+  const x0 = Math.min(Math.max(floorX, 0), hm.width - 1);
+  const y0 = Math.min(Math.max(floorY, 0), hm.height - 1);
+  const x1 = Math.min(x0 + 1, hm.width - 1);
+  const y1 = Math.min(y0 + 1, hm.height - 1);
+  const fracX = hmX - floorX;
+  const fracY = hmY - floorY;
+  const h00 = hm.heights[y0 * hm.width + x0];
+  const h10 = hm.heights[y0 * hm.width + x1];
+  const h01 = hm.heights[y1 * hm.width + x0];
+  const h11 = hm.heights[y1 * hm.width + x1];
+  return h00 * (1 - fracX) * (1 - fracY) + h10 * fracX * (1 - fracY) + h01 * (1 - fracX) * fracY + h11 * fracX * fracY;
 }
 
 /** heightmap 픽셀 좌표에서 전역 법선 계산 (중앙차분법) */
@@ -43,8 +37,8 @@ function computeHeightmapNormal(
   const heightRight = sampleHeight(hm, hmX + normalStep, hmY);
   const heightDown = sampleHeight(hm, hmX, hmY - normalStep);
   const heightUp = sampleHeight(hm, hmX, hmY + normalStep);
-  const slopeX = (heightRight - heightLeft) / (2 * normalStep * pixelWorldSize);
-  const slopeZ = (heightUp - heightDown) / (2 * normalStep * pixelWorldSize);
+  const slopeX = (heightRight - heightLeft) * HEIGHT_SCALE / (2 * normalStep * pixelWorldSize);
+  const slopeZ = (heightUp - heightDown) * HEIGHT_SCALE / (2 * normalStep * pixelWorldSize);
   const normalX = -slopeX,
     normalY = 1.0,
     normalZ = -slopeZ;
@@ -141,7 +135,7 @@ export function buildTerrainMesh(
       // heightmap 픽셀 좌표
       const hmX = hmStartX + (col / cells) * hmTileSize;
       const hmY = hmStartY + (row / cells) * hmTileSize;
-      const worldY = eliminateTJunction(hmX, hmY, row, col);
+      const worldY = eliminateTJunction(hmX, hmY, row, col) * HEIGHT_SCALE;
       const [normalX, normalY, normalZ] = computeHeightmapNormal(
         hm,
         hmX,
