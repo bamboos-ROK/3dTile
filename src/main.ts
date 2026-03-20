@@ -24,7 +24,7 @@ async function main() {
   scene.clearColor.set(0.8, 0.5, 0.8, 1);
 
   // 조명
-  const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+  const light = new HemisphericLight("ambLight", new Vector3(0, 100, 0), scene);
   light.intensity = 0.2;
   light.groundColor = new Color3(0.1, 0.08, 0.06);
 
