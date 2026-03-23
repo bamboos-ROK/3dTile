@@ -6,6 +6,7 @@ import type { Observer } from "@babylonjs/core/Misc/observable";
 export class CameraController {
   readonly camera: ArcRotateCamera;
   private readonly scene: Scene;
+  private readonly debug: boolean;
   private readonly keysDown = new Set<string>();
   private readonly keydownHandler: (e: KeyboardEvent) => void;
   private readonly keyupHandler: (e: KeyboardEvent) => void;
@@ -13,11 +14,17 @@ export class CameraController {
 
   private static readonly MOVE_SPEED = 80; // units/sec
 
-  constructor(scene: Scene, canvas: HTMLCanvasElement) {
+  constructor(
+    scene: Scene,
+    canvas: HTMLCanvasElement,
+    debug = false,
+    name: string = "mainCamera",
+  ) {
     this.scene = scene;
+    this.debug = debug;
     const initialTarget = new Vector3(0, 0, 0);
     this.camera = new ArcRotateCamera(
-      "mainCamera",
+      name,
       Math.PI * 1.7,
       Math.PI * 0.3,
       800,
@@ -48,15 +55,15 @@ export class CameraController {
   }
 
   private updateMovement(): void {
-    if (this.scene.activeCamera !== this.camera) return;
-    const fwd =
-      this.keysDown.has("KeyW") || this.keysDown.has("ArrowUp") ? 1 : 0;
-    const bwd =
-      this.keysDown.has("KeyS") || this.keysDown.has("ArrowDown") ? 1 : 0;
-    const rgt =
-      this.keysDown.has("KeyD") || this.keysDown.has("ArrowRight") ? 1 : 0;
-    const lft =
-      this.keysDown.has("KeyA") || this.keysDown.has("ArrowLeft") ? 1 : 0;
+    const forwardKey = this.debug ? "KeyW" : "ArrowUp";
+    const backKey = this.debug ? "KeyS" : "ArrowDown";
+    const rightKey = this.debug ? "KeyD" : "ArrowRight";
+    const leftKey = this.debug ? "KeyA" : "ArrowLeft";
+
+    const fwd = this.keysDown.has(forwardKey) ? 1 : 0;
+    const bwd = this.keysDown.has(backKey) ? 1 : 0;
+    const rgt = this.keysDown.has(rightKey) ? 1 : 0;
+    const lft = this.keysDown.has(leftKey) ? 1 : 0;
 
     const forwardInput = fwd - bwd;
     const rightInput = rgt - lft;

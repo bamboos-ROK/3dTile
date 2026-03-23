@@ -9,7 +9,10 @@ import "@babylonjs/inspector";
 import { CameraController } from "./engine/camera/CameraController";
 import { TileManager } from "./engine/tile/TileManager";
 import { LODTraverser } from "./engine/tile/LODTraverser";
-import { disposeDebugTileMesh, disposeDebugMaterialCache } from "./engine/tile/DebugTileMesh";
+import {
+  disposeDebugTileMesh,
+  disposeDebugMaterialCache,
+} from "./engine/tile/DebugTileMesh";
 
 async function main() {
   const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -19,15 +22,24 @@ async function main() {
   scene.clearColor.set(0.15, 0.15, 0.2, 1);
 
   // 조명
-  const ambLight = new HemisphericLight("ambLight", new Vector3(0, 1, 0), scene);
+  const ambLight = new HemisphericLight(
+    "ambLight",
+    new Vector3(0, 1, 0),
+    scene,
+  );
   ambLight.intensity = 0.4;
   ambLight.groundColor = new Color3(0.1, 0.08, 0.06);
 
-  const dirLight = new DirectionalLight("dirLight", new Vector3(-1, -2, -1), scene);
+  const dirLight = new DirectionalLight(
+    "dirLight",
+    new Vector3(-1, -2, -1),
+    scene,
+  );
   dirLight.intensity = 0.8;
 
   // 카메라
   const camera = new CameraController(scene, canvas);
+  const debugCamera = new CameraController(scene, canvas, true, "debugCamera");
 
   // TileManager + LODTraverser
   const tileManager = new TileManager();
@@ -47,7 +59,22 @@ async function main() {
     tileManager.getAllTiles().forEach((tile) => disposeDebugTileMesh(tile));
     disposeDebugMaterialCache();
     camera.dispose();
+    debugCamera.dispose();
     engine.dispose();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "KeyF") {
+      if (scene.activeCamera === camera.camera) {
+        camera.camera.detachControl();
+        debugCamera.camera.attachControl(canvas, true);
+        scene.activeCamera = debugCamera.camera;
+      } else {
+        debugCamera.camera.detachControl();
+        camera.camera.attachControl(canvas, true);
+        scene.activeCamera = camera.camera;
+      }
+    }
   });
 }
 

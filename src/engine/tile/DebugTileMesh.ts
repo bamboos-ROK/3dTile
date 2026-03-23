@@ -13,12 +13,11 @@ const EPSILON = 0.001;
 
 /** z 레벨별 색상 (범위 초과 시 modulo 순환) */
 const Z_COLORS: Color3[] = [
-  Color3.Red(),
   Color3.Green(),
   Color3.Blue(),
   Color3.Yellow(),
   Color3.Magenta(),
-  Color3.Teal(),
+  Color3.Red(),
 ];
 
 function getZColor(z: number): Color3 {
