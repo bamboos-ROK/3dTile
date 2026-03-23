@@ -117,7 +117,7 @@ Created → Loading → Active ↔ Visible → Disposed
 ## 코드 컨벤션
 
 - 모든 엔진 클래스는 `src/engine/` 하위에 위치
-- TileCoord key 형식: `"tileX_tileY_level"` (캐시 Map key)
+- TileCoord key 형식: `"z/x/y"` (캐시 Map key, 서버 표준)
 - 클래스명: PascalCase, 파일명: PascalCase.ts
 - Babylon.js import: `@babylonjs/core`에서 named import
 
@@ -144,6 +144,8 @@ npm run build    # 프로덕션 빌드
 - [x] Step 9 — main.ts 진입점 + npm install + 동작 확인
 - [x] Step 10 — 타일 seam 수정 (Heightmap 법선 + Skirt geometry)
 - [x] Step 11 — 디버그 카메라 (DebugCameraOverlay: F키 전환, LOD 색상 시각화)
+- [x] Step 12 — Tile System 리팩토링 (z/x/y 좌표계, TileManager, TileCoords, 기존 코드 legacy/ 격리)
+- [x] Step 13 — LODTraverser (SSE 기반 quadtree 순회, debug ground plane 연동)
 
 ---
 
@@ -208,5 +210,6 @@ ls -R src/
 | 19   | `19_code-review-3.md`         | 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석) |
 | 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)                                    |
 | 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                                                           |
+| 22   | `22_tile-system-refactor.md`  | Tile System 리팩토링 (z/x/y 좌표계, TileManager, DebugTileMesh, LODTraverser SSE 순회)                                      |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
