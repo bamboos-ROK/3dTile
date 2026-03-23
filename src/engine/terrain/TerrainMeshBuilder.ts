@@ -21,7 +21,12 @@ function sampleHeight(hm: HeightmapData, hmX: number, hmY: number): number {
   const h10 = hm.heights[y0 * hm.width + x1];
   const h01 = hm.heights[y1 * hm.width + x0];
   const h11 = hm.heights[y1 * hm.width + x1];
-  return h00 * (1 - fracX) * (1 - fracY) + h10 * fracX * (1 - fracY) + h01 * (1 - fracX) * fracY + h11 * fracX * fracY;
+  return (
+    h00 * (1 - fracX) * (1 - fracY) +
+    h10 * fracX * (1 - fracY) +
+    h01 * (1 - fracX) * fracY +
+    h11 * fracX * fracY
+  );
 }
 
 /** heightmap 픽셀 좌표에서 전역 법선 계산 (중앙차분법) */
@@ -37,8 +42,12 @@ function computeHeightmapNormal(
   const heightRight = sampleHeight(hm, hmX + normalStep, hmY);
   const heightDown = sampleHeight(hm, hmX, hmY - normalStep);
   const heightUp = sampleHeight(hm, hmX, hmY + normalStep);
-  const slopeX = (heightRight - heightLeft) * HEIGHT_SCALE / (2 * normalStep * pixelWorldSize);
-  const slopeZ = (heightUp - heightDown) * HEIGHT_SCALE / (2 * normalStep * pixelWorldSize);
+  const slopeX =
+    ((heightRight - heightLeft) * HEIGHT_SCALE) /
+    (2 * normalStep * pixelWorldSize);
+  const slopeZ =
+    ((heightUp - heightDown) * HEIGHT_SCALE) /
+    (2 * normalStep * pixelWorldSize);
   const normalX = -slopeX,
     normalY = 1.0,
     normalZ = -slopeZ;
@@ -165,6 +174,56 @@ export function buildTerrainMesh(
       indices.push(topRight, bottomRight, bottomLeft);
     }
   }
+
+  // skirt: 4변에 아래로 내려가는 수직 geometry 추가 → LOD 전환 경계 틈 은폐
+  // 깊이는 버텍스별 heightmap 주변 1픽셀 최대 높이 변화량으로 계산 → 틈 커버 + 지형 아래 노출 최소화
+  // const skirtEdges = [
+  //   Array.from({ length: n }, (_, i) => i), // North (row=0)
+  //   Array.from({ length: n }, (_, i) => (n - 1) * n + i), // South (row=n-1)
+  //   Array.from({ length: n }, (_, i) => i * n), // West  (col=0)
+  //   Array.from({ length: n }, (_, i) => i * n + (n - 1)), // East  (col=n-1)
+  // ];
+  // for (let edgeIdx = 0; edgeIdx < skirtEdges.length; edgeIdx++) {
+  //   const edgeIndices = skirtEdges[edgeIdx];
+  //   const reversed = edgeIdx === 1 || edgeIdx === 2; // South, West는 법선이 안쪽 → 역순 와인딩
+  //   const skirtBase = positions.length / 3;
+  //   for (let i = 0; i < edgeIndices.length; i++) {
+  //     const vi = edgeIndices[i];
+  //     const col = vi % n;
+  //     const row = Math.floor(vi / n);
+  //     const hmX = hmStartX + (col / cells) * hmTileSize;
+  //     const hmY = hmStartY + (row / cells) * hmTileSize;
+  //     const h = positions[vi * 3 + 1]; // BVS-snapped 높이
+  //     const r = Math.max(tjStep / 2, 1); // halfSpacing: 2+ level 차이 안전망
+  //     const depth =
+  //       Math.max(
+  //         Math.abs(sampleHeight(hm, hmX + r, hmY) - h),
+  //         Math.abs(sampleHeight(hm, hmX - r, hmY) - h),
+  //         Math.abs(sampleHeight(hm, hmX, hmY + r) - h),
+  //         Math.abs(sampleHeight(hm, hmX, hmY - r) - h),
+  //       ) + 2; // +2: 부동소수점 오차와 수직 절벽에서 skirt가 짧아질 경우를 대비한 최소 여유값
+  //     positions.push(
+  //       positions[vi * 3],
+  //       positions[vi * 3 + 1] - depth,
+  //       positions[vi * 3 + 2],
+  //     );
+  //     normals.push(normals[vi * 3], normals[vi * 3 + 1], normals[vi * 3 + 2]);
+  //     uvs.push(uvs[vi * 2], uvs[vi * 2 + 1]);
+  //   }
+  //   for (let i = 0; i < n - 1; i++) {
+  //     const topA = edgeIndices[i],
+  //       topB = edgeIndices[i + 1];
+  //     const botA = skirtBase + i,
+  //       botB = skirtBase + i + 1;
+  //     if (reversed) {
+  //       indices.push(topA, botA, topB);
+  //       indices.push(topB, botA, botB);
+  //     } else {
+  //       indices.push(topA, topB, botA);
+  //       indices.push(topB, botB, botA);
+  //     }
+  //   }
+  // }
 
   const vertexData = new VertexData();
   vertexData.positions = positions;
