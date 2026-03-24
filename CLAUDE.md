@@ -212,5 +212,6 @@ ls -R src/
 | 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                                                           |
 | 22   | `22_tile-system-refactor.md`  | Tile System 리팩토링 (z/x/y 좌표계, TileManager, DebugTileMesh, LODTraverser SSE 순회)                                      |
 | 23   | `23_debug-camera-second.md`   | 디버그용 두 번째 카메라 추가 (debug 인자, 키 분기: 메인=방향키, 디버그=WASD)                                                |
+| 24   | `24_tileloader-fallback.md`   | TileLoader 분리 및 디버그 타일 폴백 구조 (LODTraverser tileLoader 파라미터, 실패 시 디버그 메시 폴백, TileManager re-throw 버그 수정) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

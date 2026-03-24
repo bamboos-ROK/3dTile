@@ -43,7 +43,10 @@ async function main() {
 
   // TileManager + LODTraverser
   const tileManager = new TileManager();
-  const traverser = new LODTraverser(tileManager, scene);
+  // placeholder: 실제 로더 미구현 → 항상 실패 → 디버그 타일 폴백
+  const tileLoader = (_x: number, _y: number, _z: number) =>
+    Promise.reject(new Error("tile loader not implemented"));
+  const traverser = new LODTraverser(tileManager, scene, tileLoader);
 
   // Babylon Inspector 활성화
   await scene.debugLayer.show({ embedMode: true });

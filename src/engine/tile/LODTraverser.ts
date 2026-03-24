@@ -10,10 +10,17 @@ import { MAX_LOD_LEVEL } from "../constants";
 
 const PIXEL_THRESHOLD = 150;
 
+type TileLoaderFn = (
+  x: number,
+  y: number,
+  z: number,
+) => Promise<Partial<Pick<Tile, "dem" | "texture" | "mesh">>>;
+
 export class LODTraverser {
   constructor(
     private tileManager: TileManager,
     private scene: Scene,
+    private tileLoader: TileLoaderFn,
   ) {}
 
   update(camera: ArcRotateCamera): void {
@@ -73,10 +80,15 @@ export class LODTraverser {
     for (const key of visibleKeys) {
       const [z, x, y] = key.split("/").map(Number);
       if (!this.tileManager.hasTile(x, y, z)) {
-        const tile = this.tileManager.getTile(x, y, z);
         const bounds = getTileBounds(x, y, z);
-        tile.mesh = createDebugTileMesh(tile, bounds, this.scene);
-        tile.state = "ready";
+        this.tileManager
+          .load(x, y, z, () => this.tileLoader(x, y, z))
+          .catch(() => {
+            // 로드 실패 → 디버그 메시 폴백
+            const tile = this.tileManager.getTile(x, y, z);
+            tile.mesh = createDebugTileMesh(tile, bounds, this.scene);
+            tile.state = "ready";
+          });
       }
     }
   }

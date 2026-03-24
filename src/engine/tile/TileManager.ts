@@ -41,8 +41,9 @@ export class TileManager {
         Object.assign(tile, data);
         tile.state = "ready";
       })
-      .catch(() => {
+      .catch((e: unknown) => {
         tile.state = "error";
+        throw e;
       })
       .finally(() => {
         tile.inflight = undefined;
