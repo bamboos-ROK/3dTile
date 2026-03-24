@@ -6,7 +6,7 @@ import { Tile, tileKey } from "./Tile";
 import { TileManager } from "./TileManager";
 import { getTileBounds, getChildCoords, TileBounds } from "./TileCoords";
 import { createDebugTileMesh, disposeDebugTileMesh } from "./DebugTileMesh";
-import { MAX_LOD_LEVEL } from "../constants";
+import { MAX_LOD_LEVEL, GEO_ROOT_X, GEO_ROOT_Y, GEO_ROOT_Z } from "../constants";
 
 const PIXEL_THRESHOLD = 150;
 
@@ -14,7 +14,7 @@ type TileLoaderFn = (
   x: number,
   y: number,
   z: number,
-) => Promise<Partial<Pick<Tile, "dem" | "texture" | "mesh">>>;
+) => Promise<Partial<Omit<Tile, "x" | "y" | "z" | "state">>>;
 
 export class LODTraverser {
   constructor(
@@ -25,7 +25,7 @@ export class LODTraverser {
 
   update(camera: ArcRotateCamera): void {
     const visibleKeys = new Set<string>();
-    this.traverse(0, 0, 0, camera, visibleKeys);
+    this.traverse(GEO_ROOT_X, GEO_ROOT_Y, GEO_ROOT_Z, camera, visibleKeys);
     this.syncTiles(visibleKeys);
   }
 

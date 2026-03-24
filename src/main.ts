@@ -9,6 +9,7 @@ import "@babylonjs/inspector";
 import { CameraController } from "./engine/camera/CameraController";
 import { TileManager } from "./engine/tile/TileManager";
 import { LODTraverser } from "./engine/tile/LODTraverser";
+import { QuantizedMeshTileLoader } from "./engine/tile/QuantizedMeshTileLoader";
 import {
   disposeDebugTileMesh,
   disposeDebugMaterialCache,
@@ -43,10 +44,9 @@ async function main() {
 
   // TileManager + LODTraverser
   const tileManager = new TileManager();
-  // placeholder: 실제 로더 미구현 → 항상 실패 → 디버그 타일 폴백
-  const tileLoader = (_x: number, _y: number, _z: number) =>
-    Promise.reject(new Error("tile loader not implemented"));
-  const traverser = new LODTraverser(tileManager, scene, tileLoader);
+  const BASE_URL = "http://192.168.0.201:28845";
+  const tileLoader = new QuantizedMeshTileLoader(BASE_URL, scene, 0.01);
+  const traverser = new LODTraverser(tileManager, scene, tileLoader.load);
 
   // Babylon Inspector 활성화
   await scene.debugLayer.show({ embedMode: true });

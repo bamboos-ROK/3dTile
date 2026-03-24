@@ -1,4 +1,10 @@
-import { TERRAIN_SIZE } from "../constants";
+import {
+  TERRAIN_SIZE,
+  GEO_LON_MIN,
+  GEO_LON_MAX,
+  GEO_LAT_MIN,
+  GEO_LAT_MAX,
+} from "../constants";
 
 export type TileBounds = {
   minX: number;
@@ -12,23 +18,34 @@ export type TileBounds = {
 };
 
 /**
- * z/x/y → World 좌표 bounds 계산
+ * EPSG:4326 TMS z/x/y → World 좌표 bounds 계산
  *
- * - tile y: 아래 방향 증가 (서버 타일 표준)
- * - Babylon Z축: 위 방향 증가 → 음수 반전 적용
- * - 중앙 원점: worldX = x * tileSize - TERRAIN_SIZE/2
- *              worldZ = -y * tileSize + TERRAIN_SIZE/2
+ * EPSG:4326 TMS 공식:
+ *   tilesX = 2^(z+1), tilesY = 2^z
+ *   lon = x / tilesX * 360 - 180
+ *   lat = y / tilesY * 180 - 90  (y=0 = 남쪽)
+ *
+ * World 좌표: 루트 타일(GEO_ROOT) 지리 범위를 [-TERRAIN_SIZE/2, +TERRAIN_SIZE/2]에 매핑
+ *   worldX ← 경도 (서→동)
+ *   worldZ ← 위도 (남→북)
  */
 export function getTileBounds(x: number, y: number, z: number): TileBounds {
-  const tileSize = TERRAIN_SIZE / Math.pow(2, z);
-  const offset = TERRAIN_SIZE / 2;
+  const tilesX = Math.pow(2, z + 1);
+  const tilesY = Math.pow(2, z);
 
-  const minX = x * tileSize - offset;
-  const maxX = minX + tileSize;
+  const lonMin = (x / tilesX) * 360 - 180;
+  const lonMax = ((x + 1) / tilesX) * 360 - 180;
+  const latMin = (y / tilesY) * 180 - 90;
+  const latMax = ((y + 1) / tilesY) * 180 - 90;
 
-  // tile y 증가 → world Z 감소
-  const maxZ = -y * tileSize + offset;
-  const minZ = maxZ - tileSize;
+  const lonRange = GEO_LON_MAX - GEO_LON_MIN;
+  const latRange = GEO_LAT_MAX - GEO_LAT_MIN;
+  const half = TERRAIN_SIZE / 2;
+
+  const minX = ((lonMin - GEO_LON_MIN) / lonRange) * TERRAIN_SIZE - half;
+  const maxX = ((lonMax - GEO_LON_MIN) / lonRange) * TERRAIN_SIZE - half;
+  const minZ = ((latMin - GEO_LAT_MIN) / latRange) * TERRAIN_SIZE - half;
+  const maxZ = ((latMax - GEO_LAT_MIN) / latRange) * TERRAIN_SIZE - half;
 
   return {
     minX,
@@ -37,7 +54,7 @@ export function getTileBounds(x: number, y: number, z: number): TileBounds {
     maxZ,
     centerX: (minX + maxX) / 2,
     centerZ: (minZ + maxZ) / 2,
-    size: tileSize,
+    size: maxX - minX,
   };
 }
 

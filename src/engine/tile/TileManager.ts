@@ -1,4 +1,4 @@
-import { Tile, TileState, tileKey } from "./Tile";
+import { Tile, tileKey } from "./Tile";
 
 type CachedTile = Tile & {
   inflight?: Promise<void>;
@@ -27,7 +27,7 @@ export class TileManager {
     x: number,
     y: number,
     z: number,
-    loader: () => Promise<Omit<Tile, "x" | "y" | "z" | "state" | "mesh">>,
+    loader: () => Promise<Partial<Omit<Tile, "x" | "y" | "z" | "state">>>,
   ): Promise<void> {
     const tile = this.getTile(x, y, z);
 

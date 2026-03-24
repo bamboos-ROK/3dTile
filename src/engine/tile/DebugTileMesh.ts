@@ -31,9 +31,7 @@ function getOrCreateMaterial(z: number, scene: Scene): StandardMaterial {
   if (!materialCache.has(z)) {
     const mat = new StandardMaterial(`debug_mat_z${z}`, scene);
     mat.diffuseColor = getZColor(z);
-    mat.alpha = 0.5;
-    mat.backFaceCulling = false;
-    mat.disableDepthWrite = true;
+    mat.wireframe = true;
     materialCache.set(z, mat);
   }
   return materialCache.get(z)!;
