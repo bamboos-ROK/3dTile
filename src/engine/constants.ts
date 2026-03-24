@@ -8,10 +8,12 @@ export const HEIGHT_SCALE = 320;
 export const MAX_LOD_LEVEL = 15;
 
 // ─── 지리 좌표 루트 (EPSG:4326 TMS) ───────────────────────────────────────────
-/** 렌더링 루트 타일 — 서버 layer.json 기준 최소 단일 타일 (z=9) */
+/** 렌더링 루트 z레벨 — 서버 layer.json 기준 최소 단일 타일 (z=9) */
 export const GEO_ROOT_Z = 9;
-export const GEO_ROOT_X = 873;
-export const GEO_ROOT_Y = 362;
+
+/** GEO_LON/LAT 범위 계산용 내부 참조 (export 불필요) */
+const GEO_ROOT_X = 873;
+const GEO_ROOT_Y = 362;
 
 /** 루트 타일 지리 범위 (경도/위도, degrees) */
 export const GEO_LON_MIN =

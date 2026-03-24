@@ -4,9 +4,9 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import { Tile, tileKey } from "./Tile";
 import { TileManager } from "./TileManager";
-import { getTileBounds, getChildCoords, TileBounds } from "./TileCoords";
+import { getTileBounds, getChildCoords, worldToTileCoord, TileBounds } from "./TileCoords";
 import { createDebugTileMesh, disposeDebugTileMesh } from "./DebugTileMesh";
-import { MAX_LOD_LEVEL, GEO_ROOT_X, GEO_ROOT_Y, GEO_ROOT_Z } from "../constants";
+import { MAX_LOD_LEVEL, GEO_ROOT_Z } from "../constants";
 
 const PIXEL_THRESHOLD = 150;
 
@@ -25,7 +25,24 @@ export class LODTraverser {
 
   update(camera: ArcRotateCamera): void {
     const visibleKeys = new Set<string>();
-    this.traverse(GEO_ROOT_X, GEO_ROOT_Y, GEO_ROOT_Z, camera, visibleKeys);
+    const [cx, cy] = worldToTileCoord(
+      camera.position.x,
+      camera.position.z,
+      GEO_ROOT_Z,
+    );
+    console.log(`[LOD] center tile z=${GEO_ROOT_Z}/${cx}/${cy}`);
+
+    const tilesX = Math.pow(2, GEO_ROOT_Z + 1);
+    const tilesY = Math.pow(2, GEO_ROOT_Z);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        if (nx < 0 || nx >= tilesX || ny < 0 || ny >= tilesY) continue;
+        this.traverse(nx, ny, GEO_ROOT_Z, camera, visibleKeys);
+      }
+    }
+
     this.syncTiles(visibleKeys);
   }
 
@@ -84,7 +101,7 @@ export class LODTraverser {
         this.tileManager
           .load(x, y, z, () => this.tileLoader(x, y, z))
           .catch(() => {
-            // 로드 실패 → 디버그 메시 폴백
+            console.warn(`[Tile] No data: ${z}/${x}/${y}`);
             const tile = this.tileManager.getTile(x, y, z);
             tile.mesh = createDebugTileMesh(tile, bounds, this.scene);
             tile.state = "ready";

@@ -6,6 +6,31 @@ import {
   GEO_LAT_MAX,
 } from "../constants";
 
+/**
+ * World 좌표 → EPSG:4326 TMS z/x/y 타일 좌표 변환 (getTileBounds 역함수)
+ *
+ * clamp 없이 실제 좌표를 그대로 반환 — 범위 밖 타일은 호출부에서 skip 처리.
+ */
+export function worldToTileCoord(
+  worldX: number,
+  worldZ: number,
+  z: number,
+): [number, number] {
+  const half = TERRAIN_SIZE / 2;
+  const lonRange = GEO_LON_MAX - GEO_LON_MIN;
+  const latRange = GEO_LAT_MAX - GEO_LAT_MIN;
+
+  const lon = GEO_LON_MIN + ((worldX + half) / TERRAIN_SIZE) * lonRange;
+  const lat = GEO_LAT_MIN + ((worldZ + half) / TERRAIN_SIZE) * latRange;
+
+  const tilesX = Math.pow(2, z + 1);
+  const tilesY = Math.pow(2, z);
+  const x = Math.floor(((lon + 180) / 360) * tilesX);
+  const y = Math.floor(((lat + 90) / 180) * tilesY);
+
+  return [x, y];
+}
+
 export type TileBounds = {
   minX: number;
   maxX: number;
