@@ -4,7 +4,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import { Tile, tileKey } from "./Tile";
 import { TileManager } from "./TileManager";
-import { getTileBounds, getChildCoords, worldToTileCoord, TileBounds } from "./TileCoords";
+import { getTileBounds, getChildCoords, getParentCoord, worldToTileCoord, TileBounds } from "./TileCoords";
 import { createDebugTileMesh, disposeDebugTileMesh } from "./DebugTileMesh";
 import { MAX_LOD_LEVEL, GEO_ROOT_Z } from "../constants";
 
@@ -14,6 +14,9 @@ type TileLoaderFn = (
   x: number,
   y: number,
   z: number,
+  targetX?: number,
+  targetY?: number,
+  targetZ?: number,
 ) => Promise<Partial<Omit<Tile, "x" | "y" | "z" | "state">>>;
 
 export class LODTraverser {
@@ -98,15 +101,36 @@ export class LODTraverser {
       const [z, x, y] = key.split("/").map(Number);
       if (!this.tileManager.hasTile(x, y, z)) {
         const bounds = getTileBounds(x, y, z);
-        this.tileManager
-          .load(x, y, z, () => this.tileLoader(x, y, z))
-          .catch(() => {
-            console.warn(`[Tile] No data: ${z}/${x}/${y}`);
-            const tile = this.tileManager.getTile(x, y, z);
-            tile.mesh = createDebugTileMesh(tile, bounds, this.scene);
-            tile.state = "ready";
-          });
+        this.loadWithFallback(x, y, z, bounds, x, y, z);
       }
     }
+  }
+
+  private loadWithFallback(
+    x: number,
+    y: number,
+    z: number,
+    bounds: TileBounds,
+    srcX: number,
+    srcY: number,
+    srcZ: number,
+  ): void {
+    this.tileManager
+      .load(x, y, z, () => this.tileLoader(srcX, srcY, srcZ, x, y, z))
+      .catch(() => {
+        if (!this.tileManager.hasTile(x, y, z)) return;
+        const parent = getParentCoord(srcX, srcY, srcZ);
+        if (parent !== null) {
+          const [px, py, pz] = parent;
+          this.loadWithFallback(x, y, z, bounds, px, py, pz);
+        } else {
+          console.warn(`[Tile] No data for ${z}/${x}/${y}, using debug mesh`);
+          const tile = this.tileManager.getTile(x, y, z);
+          if (tile.state === "ready") return;
+          tile.mesh?.dispose();
+          tile.mesh = createDebugTileMesh(tile, bounds, this.scene);
+          tile.state = "ready";
+        }
+      });
   }
 }

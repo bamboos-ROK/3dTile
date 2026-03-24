@@ -38,6 +38,10 @@ export class TileManager {
     tile.state = "loading";
     tile.inflight = loader()
       .then((data) => {
+        if (tile.state === "disposed") {
+          (data as { mesh?: { dispose(): void } }).mesh?.dispose();
+          return;
+        }
         Object.assign(tile, data);
         tile.state = "ready";
       })
@@ -59,6 +63,7 @@ export class TileManager {
 
     tile.mesh?.dispose();
     tile.mesh = undefined;
+    tile.state = "disposed";
     this.cache.delete(key);
   }
 

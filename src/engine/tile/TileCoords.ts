@@ -84,6 +84,19 @@ export function getTileBounds(x: number, y: number, z: number): TileBounds {
 }
 
 /**
+ * 부모 타일 좌표 반환
+ * z=0이면 null 반환 (루트에서 더 올라갈 수 없음)
+ */
+export function getParentCoord(
+  x: number,
+  y: number,
+  z: number,
+): [number, number, number] | null {
+  if (z <= 0) return null;
+  return [x >> 1, y >> 1, z - 1];
+}
+
+/**
  * 자식 타일 좌표 반환 (쿼드트리 분할)
  * (x, y, z) → 4개 자식 at z+1
  */

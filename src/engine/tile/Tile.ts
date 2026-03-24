@@ -1,6 +1,6 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
-export type TileState = "idle" | "loading" | "ready" | "error";
+export type TileState = "idle" | "loading" | "ready" | "error" | "disposed";
 
 export type Tile = {
   x: number;
