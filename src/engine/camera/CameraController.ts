@@ -12,7 +12,7 @@ export class CameraController {
   private readonly keyupHandler: (e: KeyboardEvent) => void;
   private readonly renderObserver: Observer<Scene>;
 
-  private static readonly MOVE_SPEED = 80; // units/sec
+  private static readonly MOVE_SPEED = 200; // units/sec
 
   constructor(
     scene: Scene,
@@ -37,10 +37,11 @@ export class CameraController {
     this.camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
 
     // 카메라 제한값
-    this.camera.lowerBetaLimit = Math.PI / 8; // 22.5° — 정수직 하향 방지
+    this.camera.lowerBetaLimit = 0; // 22.5° — 정수직 하향 방지
     this.camera.upperBetaLimit = Math.PI / 2 - 0.05; // ~87°  — 지평선 진입 방지
-    this.camera.lowerRadiusLimit = 50;
-    this.camera.upperRadiusLimit = 2000;
+    this.camera.lowerRadiusLimit = 10;
+    this.camera.upperRadiusLimit = 5000;
+    this.camera.wheelPrecision = 2;
 
     // 키 상태 추적
     this.keydownHandler = (e: KeyboardEvent) => this.keysDown.add(e.code);
