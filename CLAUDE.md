@@ -215,5 +215,6 @@ ls -R src/
 | 24   | `24_tileloader-fallback.md`   | TileLoader 분리 및 디버그 타일 폴백 구조 (LODTraverser tileLoader 파라미터, 실패 시 디버그 메시 폴백, TileManager re-throw 버그 수정) |
 | 25   | `25_quantized-mesh-loader.md` | Quantized-Mesh TileLoader 구현 및 디버깅 (URL 패턴, EPSG:4326 TMS 좌표계, HWM decode, alignment padding 버그, winding 반전 수정, debug/real 타일 시각 구분) |
 | 26   | `26_zombie-tile-fix.md`       | 좀비 타일 수정 (Ghost Mesh: disposed 상태 마킹 + then guard, 병렬 Fallback 체인: state=ready guard + mesh?.dispose()) |
+| 27   | `27_parent-tile-fallback-removal.md` | 부모 타일 폴백 로직 제거 (문서화 없이 추가된 기능의 기능적 롤백, loadWithFallback 재귀 + buildMeshForTarget 필터링 제거) |
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
