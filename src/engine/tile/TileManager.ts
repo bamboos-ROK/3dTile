@@ -61,6 +61,7 @@ export class TileManager {
     const tile = this.cache.get(key);
     if (!tile) return;
 
+    tile.onDispose?.();
     tile.mesh?.dispose();
     tile.mesh = undefined;
     tile.state = "disposed";

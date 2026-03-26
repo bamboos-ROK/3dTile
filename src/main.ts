@@ -45,7 +45,8 @@ async function main() {
   // TileManager + LODTraverser
   const tileManager = new TileManager();
   const BASE_URL = "http://192.168.0.201:28845";
-  const tileLoader = new QuantizedMeshTileLoader(BASE_URL, scene, 0.01);
+  const SAT_BASE_URL = "http://192.168.0.201:28845"; // TODO: 실제 위성 서버 주소로 변경
+  const tileLoader = new QuantizedMeshTileLoader(BASE_URL, scene, 0.01, SAT_BASE_URL);
   const traverser = new LODTraverser(tileManager, scene, tileLoader.load);
 
   // Babylon Inspector 활성화

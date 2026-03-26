@@ -186,36 +186,35 @@ ls -R src/
 
 `docs/` 폴더에 생성 순서대로 번호를 붙여 저장한다.
 
-| 번호 | 파일                          | 설명                                                                                                                        |
-| ---- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 00   | `00_PRD.md`                   | 최초 PRD (원본)                                                                                                             |
-| 01   | `01_tile-lod-terrain-plan.md` | 1차 구현 계획                                                                                                               |
-| 02   | `02_debug-history.md`         | 초기 버그 디버깅 히스토리                                                                                                   |
-| 03   | `03_visual-quality-plan.md`   | 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러)                                                                        |
-| 04   | `04_lod-camera-bugfix.md`     | LOD 기준점 버그 수정 (camera.position → camera.target)                                                                      |
-| 05   | `05_wheel-lod-bugfix.md`      | 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling)                                           |
-| 06   | `06_diffuse-texture.md`       | Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거)                                                       |
-| 07   | `07_rts-camera.md`            | RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용)                                                                           |
-| 08   | `08_uv-offset-bugfix.md`      | UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제)                                                             |
-| 09   | `09_tile-seam-fix.md`         | 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함)                                                    |
-| 10   | `10_refactor-code-review.md`  | 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등)                                                |
-| 11   | `11_lod-sse.md`               | SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=150 확정)                                       |
-| 12   | `12_code-review-2.md`         | 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거)                                |
-| 13   | `13_prd-comparison.md`        | PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성)                                                       |
-| 14   | `14_arc-rotate-camera.md`     | ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)                                 |
-| 15   | `15_debug-camera.md`          | 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)                                                                       |
-| 16   | `16_lod-depth-projection.md`  | LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)                                                              |
-| 17   | `17_lod-seam-fix.md`          | LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)                                            |
-| 18   | `18_debug-camera-bugfix.md`   | 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)                                  |
-| 19   | `19_code-review-3.md`         | 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석) |
-| 20   | `20_srp-refactor.md`          | 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)                                    |
-| 21   | `21_code-explanation.md`      | 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)                                                           |
-| 22   | `22_tile-system-refactor.md`  | Tile System 리팩토링 (z/x/y 좌표계, TileManager, DebugTileMesh, LODTraverser SSE 순회)                                      |
-| 23   | `23_debug-camera-second.md`   | 디버그용 두 번째 카메라 추가 (debug 인자, 키 분기: 메인=방향키, 디버그=WASD)                                                |
-| 24   | `24_tileloader-fallback.md`   | TileLoader 분리 및 디버그 타일 폴백 구조 (LODTraverser tileLoader 파라미터, 실패 시 디버그 메시 폴백, TileManager re-throw 버그 수정) |
-| 25   | `25_quantized-mesh-loader.md` | Quantized-Mesh TileLoader 구현 및 디버깅 (URL 패턴, EPSG:4326 TMS 좌표계, HWM decode, alignment padding 버그, winding 반전 수정, debug/real 타일 시각 구분) |
-| 26   | `26_zombie-tile-fix.md`       | 좀비 타일 수정 (Ghost Mesh: disposed 상태 마킹 + then guard, 병렬 Fallback 체인: state=ready guard + mesh?.dispose()) |
-| 27   | `27_parent-tile-fallback-removal.md` | 부모 타일 폴백 로직 제거 (문서화 없이 추가된 기능의 기능적 롤백, loadWithFallback 재귀 + buildMeshForTarget 필터링 제거) |
-| 28   | `28_skirt-winding-normals-fix.md`    | Skirt 와인딩 & 법선 버그픽스 (South 엣지 invisible 수정, terrain/skirt 법선 분리, 파라미터명 northOrWest→flip)  |
+- `00_PRD.md` — 최초 PRD (원본)
+- `01_tile-lod-terrain-plan.md` — 1차 구현 계획
+- `02_debug-history.md` — 초기 버그 디버깅 히스토리
+- `03_visual-quality-plan.md` — 지형 시각 품질 개선 계획 (조명·머티리얼·버텍스 컬러)
+- `04_lod-camera-bugfix.md` — LOD 기준점 버그 수정 (camera.position → camera.target)
+- `05_wheel-lod-bugfix.md` — 휠 고도 조절 기능 추가 + LOD 버그 2개 수정 (maxLevel 4, traverse frustum culling)
+- `06_diffuse-texture.md` — Diffuse.exr 텍스처 적용 및 UV 방향 수정 (global UV, 버텍스 컬러 제거)
+- `07_rts-camera.md` — RTS 카메라 구현 (XZ 수평 이동 분리, 휠 고도 전용)
+- `08_uv-offset-bugfix.md` — UV 오프셋 버그 수정 (중앙 원점 좌표계에서 텍스처 2×2 분할 문제)
+- `09_tile-seam-fix.md` — 타일 경계 seam 수정 (Heightmap 법선 + Skirt geometry, Known Issues 포함)
+- `10_refactor-code-review.md` — 코드 리뷰 리팩토링 (안티패턴 제거, constants.ts 분리, material 책임 이동 등)
+- `11_lod-sse.md` — SSE 기반 LOD 구현 및 기준점 실험 히스토리 (camera.position + pixelThreshold=150 확정)
+- `12_code-review-2.md` — 2차 코드 리뷰 (Dead Field 제거, BoundingBox 캐싱, parseTileKey 분리, TileState.Loading 제거)
+- `13_prd-comparison.md` — PRD vs 현재 구현 비교 분석 (충족 현황, 주요 차이점, 향후 개선 가능성)
+- `14_arc-rotate-camera.md` — ArcRotateCamera 리팩토링 (UniversalCamera → ArcRotateCamera, radius 줌, beta/radius 제한값)
+- `15_debug-camera.md` — 디버그 카메라 구현 (F키 전환, LOD 레벨 색상 오버레이)
+- `16_lod-depth-projection.md` — LOD 거리 계산 개선 (AABB 최근접점 → camera forward depth 투영)
+- `17_lod-seam-fix.md` — LOD 경계 균열 수정 (enforceConsistency + BVS 방향별 조건부 적용, CoarserBorders)
+- `18_debug-camera-bugfix.md` — 디버그 카메라 버그픽스 (LOD 색상 미적용, 카메라 이중입력/detach 누락/target 드리프트 수정)
+- `19_code-review-3.md` — 3차 코드 리뷰 버그픽스 (updateVisibility P0, parseTileKey 검증, enforceConsistency 반복 제한, bbCache 정리, 매직 넘버 주석)
+- `20_srp-refactor.md` — 단일 책임 원칙 리팩토링 (HeightmapLoader 도메인 분리, CoarserBorders TerrainTile로 이동)
+- `21_code-explanation.md` — 발표용 코드 설명 문서 (아키텍처, 데이터 흐름, 핵심 알고리즘 설명)
+- `22_tile-system-refactor.md` — Tile System 리팩토링 (z/x/y 좌표계, TileManager, DebugTileMesh, LODTraverser SSE 순회)
+- `23_debug-camera-second.md` — 디버그용 두 번째 카메라 추가 (debug 인자, 키 분기: 메인=방향키, 디버그=WASD)
+- `24_tileloader-fallback.md` — TileLoader 분리 및 디버그 타일 폴백 구조 (LODTraverser tileLoader 파라미터, 실패 시 디버그 메시 폴백, TileManager re-throw 버그 수정)
+- `25_quantized-mesh-loader.md` — Quantized-Mesh TileLoader 구현 및 디버깅 (URL 패턴, EPSG:4326 TMS 좌표계, HWM decode, alignment padding 버그, winding 반전 수정, debug/real 타일 시각 구분)
+- `26_zombie-tile-fix.md` — 좀비 타일 수정 (Ghost Mesh: disposed 상태 마킹 + then guard, 병렬 Fallback 체인: state=ready guard + mesh?.dispose())
+- `27_parent-tile-fallback-removal.md` — 부모 타일 폴백 로직 제거 (문서화 없이 추가된 기능의 기능적 롤백, loadWithFallback 재귀 + buildMeshForTarget 필터링 제거)
+- `28_skirt-winding-normals-fix.md` — Skirt 와인딩 & 법선 버그픽스 (South 엣지 invisible 수정, terrain/skirt 법선 분리, 파라미터명 northOrWest→flip)
+- `29_satellite-texture.md` — 위성 이미지 텍스처 시스템 (좌표계 변환, crop 로직, Blob 캐시, drawImage 크기 버그 수정)
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

@@ -3,10 +3,12 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
 
 import { Tile } from "./Tile";
 import { getTileBounds } from "./TileCoords";
 import { ParsedQuantizedMesh, parseQuantizedMesh } from "./QuantizedMeshParser";
+import { SatelliteTextureBuilder } from "./SatelliteTextureBuilder";
 
 const Z_COLORS: Color3[] = [
   Color3.Green(),
@@ -33,12 +35,20 @@ export class QuantizedMeshTileLoader {
    * @param baseUrl  로컬 지형 서버 주소 (예: "http://localhost:8080")
    * @param scene    Babylon.js Scene
    * @param heightScale  고도(meters) → world 좌표 변환 계수
+   * @param satBaseUrl   위성 이미지 서버 주소 (없으면 solid color fallback)
    */
   constructor(
     private readonly baseUrl: string,
     private readonly scene: Scene,
     private readonly heightScale: number = 1.0,
-  ) {}
+    satBaseUrl?: string,
+  ) {
+    if (satBaseUrl) {
+      this.textureBuilder = new SatelliteTextureBuilder(scene, satBaseUrl);
+    }
+  }
+
+  private readonly textureBuilder?: SatelliteTextureBuilder;
 
   /** in-flight 요청 dedup: 같은 타일을 동시에 요청해도 fetch 1회 */
   private readonly fetchCache = new Map<string, Promise<ArrayBuffer>>();
@@ -48,7 +58,7 @@ export class QuantizedMeshTileLoader {
     x: number,
     y: number,
     z: number,
-  ): Promise<Pick<Tile, "mesh">> => {
+  ): Promise<Pick<Tile, "mesh" | "onDispose">> => {
     const url = `${this.baseUrl}/terrain/${z}/${x}/${y}.terrain`;
 
     if (!this.fetchCache.has(url)) {
@@ -69,7 +79,33 @@ export class QuantizedMeshTileLoader {
     const buffer = await this.fetchCache.get(url)!;
     const parsed = parseQuantizedMesh(buffer);
     const mesh = this.buildMesh(x, y, z, parsed);
-    return { mesh };
+
+    if (!this.textureBuilder) {
+      return { mesh };
+    }
+
+    // 즉시 fallback 표시 (satellite 로딩 중에도 지형 보임)
+    let satMaterial: StandardMaterial | null = null;
+
+    this.textureBuilder.buildCompositeTexture(x, y, z).then((tex) => {
+      if (!tex || mesh.isDisposed()) {
+        tex?.dispose();
+        return;
+      }
+      const mat = new StandardMaterial(`sat_mat_${z}/${x}/${y}`, this.scene);
+      mat.diffuseTexture = tex;
+      mat.specularColor = Color3.Black();
+      mesh.material = mat;
+      satMaterial = mat;
+    });
+
+    const onDispose = () => {
+      (satMaterial?.diffuseTexture as DynamicTexture | null)?.dispose();
+      satMaterial?.dispose();
+      satMaterial = null;
+    };
+
+    return { mesh, onDispose };
   };
 
   private buildMesh(
@@ -88,6 +124,16 @@ export class QuantizedMeshTileLoader {
       mainPositions[i * 3 + 1] =
         (minHeight + height[i] * (maxHeight - minHeight)) * this.heightScale;
       mainPositions[i * 3 + 2] = bounds.minZ + v[i] * bounds.size;
+    }
+
+    // 메인 UV 빌드
+    // - u[i]: west=0, east=1 → UV U와 일치
+    // - v[i]: south=0, north=1 → Babylon.js V=0=하단, V=1=상단과 일치
+    // - OffscreenCanvas Y=0=north는 WebGL 텍스처 로딩 시 자동 플립되어 상쇄
+    const mainUVs = new Float32Array(vertexCount * 2);
+    for (let i = 0; i < vertexCount; i++) {
+      mainUVs[i * 2] = u[i];
+      mainUVs[i * 2 + 1] = v[i];
     }
 
     // Skirt geometry — LOD 경계 seam을 아래로 드리우는 "치마"로 가림
@@ -119,6 +165,7 @@ export class QuantizedMeshTileLoader {
 
     // skirt vertex 배열 (원본 vertex 뒤에 append)
     const skirtVerts: number[] = [];
+    const skirtUVs: number[] = [];
     // skirt vertex의 원본 내 인덱스 → skirt 배열 내 위치 매핑
     const skirtMap = new Map<number, number>(); // origIdx → skirtOffset
 
@@ -130,6 +177,7 @@ export class QuantizedMeshTileLoader {
         mainPositions[origIdx * 3 + 1] - skirtDepth,
         mainPositions[origIdx * 3 + 2],
       );
+      skirtUVs.push(mainUVs[origIdx * 2], mainUVs[origIdx * 2 + 1]);
       skirtMap.set(origIdx, offset);
       return offset;
     }
@@ -162,11 +210,15 @@ export class QuantizedMeshTileLoader {
     addEdgeSkirts(west, false);
     addEdgeSkirts(east, true);
 
-    // 최종 positions / indices 합산
+    // 최종 positions / indices / UVs 합산
     const totalVertices = vertexCount + skirtVerts.length / 3;
     const allPositions = new Float32Array(totalVertices * 3);
     allPositions.set(mainPositions, 0);
     allPositions.set(skirtVerts, vertexCount * 3);
+
+    const allUVs = new Float32Array(totalVertices * 2);
+    allUVs.set(mainUVs, 0);
+    allUVs.set(skirtUVs, vertexCount * 2);
 
     const mainIndexCount = indices.length;
     const allIndices = new (totalVertices > 65535 ? Uint32Array : Uint16Array)(
@@ -194,6 +246,7 @@ export class QuantizedMeshTileLoader {
     vd.positions = allPositions;
     vd.indices = allIndices;
     vd.normals = normals;
+    vd.uvs = allUVs;
 
     const mesh = new Mesh(`tile_${z}/${x}/${y}`, this.scene);
     vd.applyToMesh(mesh, false);

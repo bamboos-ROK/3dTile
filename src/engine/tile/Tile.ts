@@ -10,6 +10,7 @@ export type Tile = {
   dem?: Float32Array;
   texture?: unknown;
   mesh?: Mesh;
+  onDispose?: () => void;
 };
 
 export function tileKey(x: number, y: number, z: number): string {

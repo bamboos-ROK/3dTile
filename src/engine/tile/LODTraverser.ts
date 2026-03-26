@@ -6,7 +6,7 @@ import { Tile, tileKey } from "./Tile";
 import { TileManager } from "./TileManager";
 import { getTileBounds, getChildCoords, worldToTileCoord, TileBounds } from "./TileCoords";
 import { createDebugTileMesh, disposeDebugTileMesh } from "./DebugTileMesh";
-import { MAX_LOD_LEVEL, GEO_ROOT_Z } from "../constants";
+import { MAX_LOD_LEVEL, GEO_ROOT_Z, DEBUG } from "../constants";
 
 const PIXEL_THRESHOLD = 150;
 
@@ -101,6 +101,7 @@ export class LODTraverser {
         this.tileManager
           .load(x, y, z, () => this.tileLoader(x, y, z))
           .catch(() => {
+            if (!DEBUG) return;
             if (!this.tileManager.hasTile(x, y, z)) return;
             console.warn(`[Tile] No data for ${z}/${x}/${y}, using debug mesh`);
             const tile = this.tileManager.getTile(x, y, z);
