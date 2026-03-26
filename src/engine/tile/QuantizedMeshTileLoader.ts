@@ -50,6 +50,9 @@ export class QuantizedMeshTileLoader {
 
   private readonly textureBuilder?: SatelliteTextureBuilder;
 
+  /** tile 단위 generation — dispose 후 재생성 시 stale texture 차단 */
+  private readonly _tileGen = new Map<string, number>();
+
   /** in-flight 요청 dedup: 같은 타일을 동시에 요청해도 fetch 1회 */
   private readonly fetchCache = new Map<string, Promise<ArrayBuffer>>();
 
@@ -87,22 +90,35 @@ export class QuantizedMeshTileLoader {
     // 즉시 fallback 표시 (satellite 로딩 중에도 지형 보임)
     let satMaterial: StandardMaterial | null = null;
 
-    this.textureBuilder.buildCompositeTexture(x, y, z).then((tex) => {
-      if (!tex || mesh.isDisposed()) {
-        tex?.dispose();
+    // tile 단위 generation — 동일 tile 재생성 시 이전 lifecycle의 stale texture 차단
+    const tileKey = `${z}/${x}/${y}`;
+    this._tileGen.set(tileKey, (this._tileGen.get(tileKey) ?? 0) + 1);
+    const myGen = this._tileGen.get(tileKey)!;
+
+    const applyTexture = (tex: DynamicTexture) => {
+      if (mesh.isDisposed() || myGen !== this._tileGen.get(tileKey)) {
+        tex.dispose();
         return;
       }
-      const mat = new StandardMaterial(`sat_mat_${z}/${x}/${y}`, this.scene);
-      mat.diffuseTexture = tex;
-      mat.specularColor = Color3.Black();
-      mesh.material = mat;
-      satMaterial = mat;
-    });
+      const oldTex = satMaterial?.diffuseTexture as DynamicTexture | null;
+      if (!satMaterial) {
+        const mat = new StandardMaterial(`sat_mat_${tileKey}`, this.scene);
+        mat.specularColor = Color3.Black();
+        mesh.material = mat;
+        satMaterial = mat;
+      }
+      satMaterial.diffuseTexture = tex;
+      oldTex?.dispose();
+    };
+
+    this.textureBuilder.buildCompositeTexture(x, y, z, applyTexture)
+      .then((finalTex) => { if (finalTex) applyTexture(finalTex); });
 
     const onDispose = () => {
       (satMaterial?.diffuseTexture as DynamicTexture | null)?.dispose();
       satMaterial?.dispose();
       satMaterial = null;
+      this.textureBuilder!.cancelComposite(x, y, z);
     };
 
     return { mesh, onDispose };

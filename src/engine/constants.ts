@@ -32,5 +32,8 @@ export const SAT_Z_MIN = 12;
 export const SAT_Z_MAX = 18;
 export const SAT_TILE_PIXEL_SIZE = 256;
 
+/** 위성 타일이 지형 타일보다 높은 해상도를 사용하도록 하는 오프셋 (타일 수: 최대 4×4=16) */
+export const SAT_Z_OFFSET = 0;
+
 /** 디버그 모드: true이면 위성 오버레이·DebugTileMesh 폴백 활성화 */
 export const DEBUG = true;
