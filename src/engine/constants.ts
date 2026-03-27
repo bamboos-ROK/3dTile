@@ -1,9 +1,6 @@
 /** 지형 world 크기 (units) */
 export const TERRAIN_SIZE = 512;
 
-/** 높이맵 최대 높이 (units) */
-export const HEIGHT_SCALE = 320;
-
 /** Quadtree 최대 LOD 레벨 (서버 최대 z=15) */
 export const MAX_LOD_LEVEL = 15;
 
@@ -23,9 +20,6 @@ export const GEO_LON_MAX =
 export const GEO_LAT_MIN = (GEO_ROOT_Y / Math.pow(2, GEO_ROOT_Z)) * 180 - 90;
 export const GEO_LAT_MAX =
   ((GEO_ROOT_Y + 1) / Math.pow(2, GEO_ROOT_Z)) * 180 - 90;
-
-/** 타일당 버텍스 해상도 (32×32 vertices, 31×31 cells) */
-export const VERTEX_RESOLUTION = 32;
 
 // ─── 위성 이미지 설정 ────────────────────────────────────────────────────────
 export const SAT_Z_MIN = 12;
