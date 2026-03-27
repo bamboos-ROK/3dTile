@@ -148,7 +148,13 @@ export class SatelliteTextureBuilder {
 
             const dx = (sx - xMin) * SAT_TILE_PIXEL_SIZE;
             const dy = (sy - yMin) * SAT_TILE_PIXEL_SIZE;
-            ctx.drawImage(bmp, dx, dy, SAT_TILE_PIXEL_SIZE, SAT_TILE_PIXEL_SIZE);
+            ctx.drawImage(
+              bmp,
+              dx,
+              dy,
+              SAT_TILE_PIXEL_SIZE,
+              SAT_TILE_PIXEL_SIZE,
+            );
             bmp.close();
             anySuccess = true;
 
@@ -156,20 +162,37 @@ export class SatelliteTextureBuilder {
               ctx.strokeStyle = "red";
               ctx.lineWidth = 3;
               ctx.strokeRect(dx, dy, SAT_TILE_PIXEL_SIZE, SAT_TILE_PIXEL_SIZE);
-              ctx.fillStyle = "red";
-              ctx.font = `bold ${SAT_TILE_PIXEL_SIZE / 8}px monospace`;
-              ctx.fillText(
-                `${satZ}/${sx},${sy}`,
-                dx + 6,
-                dy + SAT_TILE_PIXEL_SIZE / 8 + 6,
-              );
+              const fontSize = SAT_TILE_PIXEL_SIZE / 12;
+              ctx.font = `bold ${fontSize}px monospace`;
+
+              ctx.fillStyle = "coral";
+              // ctx.fillText(
+              //   `Sat:${satZ}/${sx},${sy}`,
+              //   dx + 6,
+              //   dy + SAT_TILE_PIXEL_SIZE / 8 + 6,
+              // );
+              const lines = ["[Sat]", `${satZ}/${sx}/${sy}`];
+              lines.forEach((line, i) => {
+                ctx.fillText(
+                  line,
+                  dx + 6,
+                  dy +
+                    SAT_TILE_PIXEL_SIZE / 8 +
+                    16 -
+                    fontSize +
+                    i * (fontSize * 1.2),
+                );
+              });
             }
 
             // partial은 첫 번째 타일 도착 시 1회만 전송
             if (!partialSent && onPartial) {
               partialSent = true;
               createImageBitmap(canvas).then((partial) => {
-                if (signal.aborted) { partial.close(); return; }
+                if (signal.aborted) {
+                  partial.close();
+                  return;
+                }
                 const tex = new DynamicTexture(
                   `sat_partial_${z}/${x}/${y}`,
                   { width: partial.width, height: partial.height },
@@ -182,7 +205,9 @@ export class SatelliteTextureBuilder {
               });
             }
           })
-          .catch(() => { /* 개별 타일 실패 무시 */ });
+          .catch(() => {
+            /* 개별 타일 실패 무시 */
+          });
 
         tilePromises.push(p);
       }
@@ -216,7 +241,25 @@ export class SatelliteTextureBuilder {
     const cropH = Math.max(1, Math.round(cropY1 - cropY0));
 
     const cropCanvas = new OffscreenCanvas(cropW, cropH);
-    cropCanvas.getContext("2d")!.drawImage(canvas, -cropX0, -cropY0);
+    const ctx2d = cropCanvas.getContext("2d")!;
+    ctx2d.drawImage(canvas, -cropX0, -cropY0);
+
+    if (DEBUG) {
+      const fontSize = Math.max(12, cropW / 12);
+      ctx2d.font = `bold ${fontSize}px monospace`;
+      ctx2d.fillStyle = "rgba(30,200,60,0.7)";
+      ctx2d.textAlign = "center";
+      const lines = ["[Terr]", `z: ${z}`, `x: ${x}`, `y: ${y}`];
+      const totalH = lines.length * fontSize * 1.2;
+      lines.forEach((line, i) => {
+        ctx2d.fillText(
+          line,
+          cropW / 2,
+          cropH / 2 - totalH / 2 + i * fontSize * 1.2,
+        );
+      });
+    }
+
     return createImageBitmap(cropCanvas);
   }
 
