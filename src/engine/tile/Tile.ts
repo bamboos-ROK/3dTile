@@ -1,6 +1,13 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
-export type TileState = "idle" | "loading" | "ready" | "error" | "disposed";
+export type TileState =
+  | "idle"
+  | "queued"
+  | "loading"
+  | "ready"
+  | "cached"
+  | "error"
+  | "disposed";
 
 export type Tile = {
   x: number;
@@ -11,6 +18,7 @@ export type Tile = {
   texture?: unknown;
   mesh?: Mesh;
   onDispose?: () => void;
+  lastUsed?: number;
 };
 
 export function tileKey(x: number, y: number, z: number): string {

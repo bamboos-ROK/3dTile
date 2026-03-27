@@ -217,5 +217,6 @@ ls -R src/
 - `28_skirt-winding-normals-fix.md` — Skirt 와인딩 & 법선 버그픽스 (South 엣지 invisible 수정, terrain/skirt 법선 분리, 파라미터명 northOrWest→flip)
 - `29_satellite-texture.md` — 위성 이미지 텍스처 시스템 (좌표계 변환, crop 로직, Blob 캐시, drawImage 크기 버그 수정)
 - `30_fetch-performance.md` — 위성 Fetch 성능 개선 (SAT_Z_OFFSET 조정, TileFetchQueue AbortSignal, cancelComposite, progressive rendering, tile 단위 generation)
+- `31_lod-traverser-refactor.md` — LODTraverser 리팩토링 (Priority Queue, LRU Cache, Hysteresis, Frustum Cull, Parent Fallback, TileLoadQueue 신규)
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.

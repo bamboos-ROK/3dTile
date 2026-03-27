@@ -44,7 +44,7 @@ async function main() {
   debugCamera.camera.detachControl();
 
   // TileManager + LODTraverser
-  const tileManager = new TileManager();
+  const tileManager = new TileManager(() => camera.camera.position);
   const BASE_URL = "http://192.168.0.201:28845";
   const SAT_BASE_URL = "http://192.168.0.201:28845";
   const tileLoader = new QuantizedMeshTileLoader(

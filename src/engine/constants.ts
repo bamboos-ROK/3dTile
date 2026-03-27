@@ -37,3 +37,9 @@ export const SAT_Z_OFFSET = 0;
 
 /** 디버그 모드: true이면 위성 오버레이·DebugTileMesh 폴백 활성화 */
 export const DEBUG = true;
+
+// ─── LOD 전환 임계값 (Hysteresis) ────────────────────────────────────────────
+/** 새로 split할 때 기준 (높을수록 더 자주 쪼개짐) */
+export const SPLIT_THRESHOLD = 150;
+/** 이미 split된 것을 merge할 때 기준 — thrashing 방지 */
+export const MERGE_THRESHOLD = 100;
