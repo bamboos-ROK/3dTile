@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import { Tile, tileKey } from "./Tile";
-import { TileLoadQueue, TileLoaderFn } from "./TileLoadQueue";
+import { TerrainLoadQueue, TerrainLoaderFn } from "./TerrainLoadQueue";
 
 const CACHE_LIMIT = 64;
 
@@ -15,10 +15,10 @@ export class TileManager {
     string,
     { x: number; y: number; z: number }
   >();
-  private loadQueue: TileLoadQueue;
+  private loadQueue: TerrainLoadQueue;
 
   constructor(cameraPosProvider: () => Vector3) {
-    this.loadQueue = new TileLoadQueue(
+    this.loadQueue = new TerrainLoadQueue(
       cameraPosProvider,
       (x, y, z) => this.getTile(x, y, z),
       (key) => this.isDesired(key),
@@ -102,7 +102,7 @@ export class TileManager {
    */
   sync(
     desiredTiles: Map<string, { x: number; y: number; z: number }>,
-    loaderFn: TileLoaderFn,
+    loaderFn: TerrainLoaderFn,
   ): void {
     this.currentDesiredTiles = desiredTiles;
 
@@ -141,7 +141,7 @@ export class TileManager {
       }
     }
 
-    // 4. drain (cameraPos는 TileLoadQueue 내부에서 cameraPosProvider()로 최신값 획득)
+    // 4. drain (cameraPos는 TerrainLoadQueue 내부에서 cameraPosProvider()로 최신값 획득)
     this.loadQueue.drain(loaderFn);
   }
 }

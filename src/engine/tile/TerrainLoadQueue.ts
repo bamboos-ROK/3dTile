@@ -11,7 +11,7 @@ type QueueEntry = {
   enqueuedAt: number;
 };
 
-export type TileLoaderFn = (
+export type TerrainLoaderFn = (
   x: number,
   y: number,
   z: number,
@@ -23,7 +23,7 @@ const LEVEL_WEIGHT = 50;
 // Starvation 방지: MAX_CONCURRENT번마다 1번은 대기 시간 기준으로 선택
 const STARVATION_SLOT = MAX_CONCURRENT;
 
-export class TileLoadQueue {
+export class TerrainLoadQueue {
   /** TileManager.sync()에서 직접 접근 — 대기 중인 항목 제거용 */
   queue: QueueEntry[] = [];
   private running = 0;
@@ -50,7 +50,7 @@ export class TileLoadQueue {
     this.queue = this.queue.filter((e) => e.key !== key);
   }
 
-  drain(loaderFn: TileLoaderFn): void {
+  drain(loaderFn: TerrainLoaderFn): void {
     if (this.isDraining) return; // 재진입 차단
     this.isDraining = true;
     try {
@@ -112,7 +112,7 @@ export class TileLoadQueue {
     return this.queue.shift()!;
   }
 
-  private execute(entry: QueueEntry, loaderFn: TileLoaderFn): void {
+  private execute(entry: QueueEntry, loaderFn: TerrainLoaderFn): void {
     const { key, x, y, z } = entry;
     const tile = this.getTile(x, y, z);
     tile.state = "loading";

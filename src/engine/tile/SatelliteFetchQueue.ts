@@ -5,7 +5,7 @@ interface QueueItem {
   signal?: AbortSignal;
 }
 
-export class TileFetchQueue {
+export class SatelliteFetchQueue {
   private readonly queue: QueueItem[] = [];
   private running = 0;
 

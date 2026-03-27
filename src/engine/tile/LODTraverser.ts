@@ -4,7 +4,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import { Tile, tileKey } from "./Tile";
 import { TileManager } from "./TileManager";
-import { TileLoaderFn } from "./TileLoadQueue";
+import { TerrainLoaderFn } from "./TerrainLoadQueue";
 import {
   getTileBounds,
   getChildCoords,
@@ -23,7 +23,7 @@ import {
 
 export class LODTraverser {
   private prevVisibleKeys = new Set<string>();
-  private loaderFn: TileLoaderFn;
+  private loaderFn: TerrainLoaderFn;
 
   constructor(
     private tileManager: TileManager,
@@ -34,7 +34,7 @@ export class LODTraverser {
       z: number,
     ) => Promise<Partial<Omit<Tile, "x" | "y" | "z" | "state">>>,
   ) {
-    // debug fallback을 loaderFn 안에 래핑 — TileLoadQueue는 debug 메시 몰라도 됨
+    // debug fallback을 loaderFn 안에 래핑 — TerrainLoadQueue는 debug 메시 몰라도 됨
     this.loaderFn = async (x, y, z) => {
       try {
         return await tileLoader(x, y, z);

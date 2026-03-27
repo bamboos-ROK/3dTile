@@ -13,7 +13,7 @@ import {
   SAT_TILE_PIXEL_SIZE,
   DEBUG,
 } from "../constants";
-import { TileFetchQueue } from "./TileFetchQueue";
+import { SatelliteFetchQueue } from "./SatelliteFetchQueue";
 
 const MAX_BLOB_CACHE = 300;
 const MAX_COMPOSITE_CACHE = 100;
@@ -29,7 +29,7 @@ export class SatelliteTextureBuilder {
   >();
   /** 진행 중인 합성의 AbortController — cancelComposite 시 취소 */
   private readonly inflightControllers = new Map<string, AbortController>();
-  private readonly fetchQueue = new TileFetchQueue(6);
+  private readonly fetchQueue = new SatelliteFetchQueue(6);
 
   constructor(
     private readonly scene: Scene,
