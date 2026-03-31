@@ -34,7 +34,6 @@ export class LODTraverser {
       z: number,
     ) => Promise<Partial<Omit<Tile, "x" | "y" | "z" | "state">>>,
   ) {
-    // debug fallback을 loaderFn 안에 래핑 — TerrainLoadQueue는 debug 메시 몰라도 됨
     this.loaderFn = async (x, y, z) => {
       try {
         return await tileLoader(x, y, z);
@@ -106,18 +105,15 @@ export class LODTraverser {
     );
     const dist = toTile.length();
     if (
-      dist > bounds.size * 1.5 &&
+      dist > Math.max(bounds.sizeX, bounds.sizeZ) * 1.5 &&
       Vector3.Dot(toTile.normalizeToNew(), forward) < -0.3
     )
       return;
 
     const key = tileKey(x, y, z);
-    const isCurrentlyVisible = this.prevVisibleKeys.has(key);
+    const wasLeaf = this.prevVisibleKeys.has(key);
 
-    if (
-      z < MAX_LOD_LEVEL &&
-      this.shouldSplit(bounds, camera, isCurrentlyVisible)
-    ) {
+    if (z < MAX_LOD_LEVEL && this.shouldSplit(bounds, camera, wasLeaf)) {
       for (const [cx, cy, cz] of getChildCoords(x, y, z)) {
         this.traverse(cx, cy, cz, camera, forward, visibleKeys);
       }
@@ -129,7 +125,7 @@ export class LODTraverser {
   private shouldSplit(
     bounds: TileBounds,
     camera: ArcRotateCamera,
-    isCurrentlyVisible: boolean,
+    wasLeaf: boolean,
   ): boolean {
     const cameraPos = camera.position;
     const forward = camera.target.subtract(cameraPos).normalize();
@@ -141,7 +137,7 @@ export class LODTraverser {
     const euclidean = toTile.length();
     const effectiveDepth = Math.max(depth, euclidean * 0.5, 1);
 
-    const geometricError = bounds.size / 2;
+    const geometricError = Math.max(bounds.sizeX, bounds.sizeZ) / 2;
     const screenH = this.scene.getEngine().getRenderHeight();
     const projFactor = screenH / (2 * Math.tan(camera.fov / 2));
 
@@ -149,7 +145,7 @@ export class LODTraverser {
 
     // Hysteresis: 이미 leaf이면 SPLIT_THRESHOLD (높은 기준 → 쉽게 split 안 함, 안정화)
     // 이전에 split이었으면 MERGE_THRESHOLD (낮은 기준 → split 유지, 안정화)
-    const threshold = isCurrentlyVisible ? SPLIT_THRESHOLD : MERGE_THRESHOLD;
+    const threshold = wasLeaf ? SPLIT_THRESHOLD : MERGE_THRESHOLD;
     return screenError > threshold;
   }
 

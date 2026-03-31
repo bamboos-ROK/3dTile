@@ -82,7 +82,10 @@ export class SatelliteTextureBuilder {
     const key = `${z}/${x}/${y}`;
 
     if (this.compositeCache.has(key)) {
-      return Promise.resolve(this.compositeCache.get(key)!);
+      const bitmap = this.compositeCache.get(key)!;
+      this.compositeCache.delete(key);
+      this.compositeCache.set(key, bitmap);
+      return Promise.resolve(bitmap);
     }
 
     if (!this.inflightCache.has(key)) {
@@ -166,11 +169,6 @@ export class SatelliteTextureBuilder {
               ctx.font = `bold ${fontSize}px monospace`;
 
               ctx.fillStyle = "coral";
-              // ctx.fillText(
-              //   `Sat:${satZ}/${sx},${sy}`,
-              //   dx + 6,
-              //   dy + SAT_TILE_PIXEL_SIZE / 8 + 6,
-              // );
               const lines = ["[Sat]", `${satZ}/${sx}/${sy}`];
               lines.forEach((line, i) => {
                 ctx.fillText(
@@ -278,6 +276,10 @@ export class SatelliteTextureBuilder {
       });
       this.blobCache.set(url, p);
       this.evictBlobCache();
+    } else {
+      const p = this.blobCache.get(url)!;
+      this.blobCache.delete(url);
+      this.blobCache.set(url, p);
     }
     return this.blobCache.get(url)!.then((blob) => {
       if (signal?.aborted) throw new DOMException("Aborted", "AbortError");

@@ -1,12 +1,16 @@
 // Web Mercator 유효 위도 범위 (±90°에서 tan/cos 발산)
-export const MERCATOR_LAT_LIMIT = 85.051129;
+const MERCATOR_LAT_LIMIT = 85.051129;
 
-/** lat(도) + nSat → Web Mercator Y tile fraction */
-export function latToMercatorYFrac(lat: number, nSat: number): number {
-  const clamped = Math.max(-MERCATOR_LAT_LIMIT, Math.min(MERCATOR_LAT_LIMIT, lat));
+/** lat(도) + numSatTiles → Web Mercator Y tile fraction */
+export function latToMercatorYFrac(lat: number, numSatTiles: number): number {
+  const clamped = Math.max(
+    -MERCATOR_LAT_LIMIT,
+    Math.min(MERCATOR_LAT_LIMIT, lat),
+  );
   const latRad = (clamped * Math.PI) / 180;
   return (
-    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * nSat
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+    numSatTiles
   );
 }
 
@@ -41,22 +45,26 @@ export function getSatelliteTileRange(
   terrainY: number,
   satZ: number,
 ): { xMin: number; xMax: number; yMin: number; yMax: number } {
-  const { lonMin, lonMax, latMin, latMax } = terrainTileBounds(terrainZ, terrainX, terrainY);
-  const nSat = Math.pow(2, satZ);
+  const { lonMin, lonMax, latMin, latMax } = terrainTileBounds(
+    terrainZ,
+    terrainX,
+    terrainY,
+  );
+  const numSatTiles = Math.pow(2, satZ);
 
   // min 경계: floor (경계점 포함이 맞음)
   const lonToSatXMin = (lon: number): number =>
-    Math.floor(((lon + 180) / 360) * nSat);
+    Math.floor(((lon + 180) / 360) * numSatTiles);
 
   // max 경계: ceil - 1 (경계점이 정확히 타일 경계에 걸릴 때 한 칸 초과 방지)
   const lonToSatXMax = (lon: number): number =>
-    Math.ceil(((lon + 180) / 360) * nSat) - 1;
+    Math.ceil(((lon + 180) / 360) * numSatTiles) - 1;
 
   // Y축 방향 주의: latMax(북쪽) → yMin (작은 Y), latMin(남쪽) → yMax (큰 Y)
   const xMin = lonToSatXMin(lonMin);
   const xMax = lonToSatXMax(lonMax);
-  const yMin = Math.floor(latToMercatorYFrac(latMax, nSat)); // 북쪽 경계 → floor OK
-  const yMax = Math.ceil(latToMercatorYFrac(latMin, nSat)) - 1; // 남쪽 경계 → ceil-1
+  const yMin = Math.floor(latToMercatorYFrac(latMax, numSatTiles)); // 북쪽 경계 → floor OK
+  const yMax = Math.ceil(latToMercatorYFrac(latMin, numSatTiles)) - 1; // 남쪽 경계 → ceil-1
 
   // 범위 역전 방지 (FP 오차 극단 케이스)
   return {

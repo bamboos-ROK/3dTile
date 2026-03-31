@@ -6,8 +6,7 @@ export type TileState =
   | "loading"
   | "ready"
   | "cached"
-  | "error"
-  | "disposed";
+  | "error";
 
 export type Tile = {
   x: number;

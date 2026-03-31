@@ -92,7 +92,6 @@ export class TileManager {
     tile.onDispose?.();
     tile.mesh?.dispose();
     tile.mesh = undefined;
-    tile.state = "disposed";
     this.cache.delete(key);
   }
 

@@ -19,7 +19,7 @@ export type TerrainLoaderFn = (
 
 const MAX_QUEUE_SIZE = 100;
 const MAX_CONCURRENT = 4;
-const LEVEL_WEIGHT = 50;
+const LEVEL_WEIGHT = 50; // priority 뺄셈 공식용
 // Starvation 방지: MAX_CONCURRENT번마다 1번은 대기 시간 기준으로 선택
 const STARVATION_SLOT = MAX_CONCURRENT;
 
@@ -59,7 +59,9 @@ export class TerrainLoadQueue {
       // MAX_QUEUE_SIZE 초과분 drop — reduce로 worst 탐색 (pop() 금지)
       while (this.queue.length > MAX_QUEUE_SIZE) {
         const worst = this.queue.reduce((a, b) =>
-          this.calcPriority(a, cameraPos) > this.calcPriority(b, cameraPos) ? a : b,
+          this.calcPriority(a, cameraPos) > this.calcPriority(b, cameraPos)
+            ? a
+            : b,
         );
         this.remove(worst.key);
         const tile = this.getTile(worst.x, worst.y, worst.z);
@@ -67,11 +69,9 @@ export class TerrainLoadQueue {
       }
 
       // priority 재계산 후 정렬 (매 drain마다) — O(n log n)
-      // MAX_QUEUE_SIZE=100 기준 문제 없음
-      // TODO: queue size 증가 시 min-heap으로 전환 고려
-      // TODO: priority 공식 튜닝 — dist/(1+z*0.3) 형태가 더 자연스러울 수 있음 (실측 후 결정)
       this.queue.sort(
-        (a, b) => this.calcPriority(a, cameraPos) - this.calcPriority(b, cameraPos),
+        (a, b) =>
+          this.calcPriority(a, cameraPos) - this.calcPriority(b, cameraPos),
       );
 
       while (this.running < MAX_CONCURRENT && this.queue.length > 0) {
@@ -94,7 +94,8 @@ export class TerrainLoadQueue {
     const dz = bounds.centerZ - cameraPos.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     // 가까울수록, z-level 높을수록 우선 처리 (낮을수록 먼저)
-    return dist - entry.z * LEVEL_WEIGHT;
+    return dist - entry.z * LEVEL_WEIGHT; // 뺄셈 공식 — 월드 스케일에 종속적
+    // return dist / (1 + entry.z * 0.3); // 나눗셈 공식 — 스케일-불변, 항상 양수
   }
 
   private dequeue(): QueueEntry {

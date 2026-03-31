@@ -48,7 +48,7 @@ export function createDebugTileMesh(
 ): Mesh {
   const mesh = MeshBuilder.CreateGround(
     `debug_${tile.z}/${tile.x}/${tile.y}`,
-    { width: bounds.size, height: bounds.size },
+    { width: bounds.sizeX, height: bounds.sizeZ },
     scene,
   );
 

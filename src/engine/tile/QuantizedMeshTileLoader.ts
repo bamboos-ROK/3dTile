@@ -7,7 +7,11 @@ import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTextur
 
 import { Tile } from "./Tile";
 import { getTileBounds } from "./TileCoords";
-import { ParsedQuantizedMesh, parseQuantizedMesh } from "./QuantizedMeshParser";
+import {
+  ParsedQuantizedMesh,
+  parseQuantizedMesh,
+  INT16_MAX,
+} from "./QuantizedMeshParser";
 import { SatelliteTextureBuilder } from "./SatelliteTextureBuilder";
 
 const Z_COLORS: Color3[] = [
@@ -111,8 +115,11 @@ export class QuantizedMeshTileLoader {
       oldTex?.dispose();
     };
 
-    this.textureBuilder.buildCompositeTexture(x, y, z, applyTexture)
-      .then((finalTex) => { if (finalTex) applyTexture(finalTex); });
+    this.textureBuilder
+      .buildCompositeTexture(x, y, z, applyTexture)
+      .then((finalTex) => {
+        if (finalTex) applyTexture(finalTex);
+      });
 
     const onDispose = () => {
       (satMaterial?.diffuseTexture as DynamicTexture | null)?.dispose();
@@ -136,10 +143,10 @@ export class QuantizedMeshTileLoader {
     // 메인 positions 빌드
     const mainPositions = new Float32Array(vertexCount * 3);
     for (let i = 0; i < vertexCount; i++) {
-      mainPositions[i * 3] = bounds.minX + u[i] * bounds.size;
+      mainPositions[i * 3] = bounds.minX + u[i] * bounds.sizeX;
       mainPositions[i * 3 + 1] =
         (minHeight + height[i] * (maxHeight - minHeight)) * this.heightScale;
-      mainPositions[i * 3 + 2] = bounds.minZ + v[i] * bounds.size;
+      mainPositions[i * 3 + 2] = bounds.minZ + v[i] * bounds.sizeZ;
     }
 
     // 메인 UV 빌드
@@ -153,11 +160,11 @@ export class QuantizedMeshTileLoader {
     }
 
     // Skirt geometry — LOD 경계 seam을 아래로 드리우는 "치마"로 가림
-    const EDGE_EPS = 2 / 32767;
+    const EDGE_EPS = 2 / INT16_MAX;
     const skirtDepth = Math.max(
       (maxHeight - minHeight) * this.heightScale * 0.3,
       this.heightScale * 0.1,
-      bounds.size * 0.05,
+      Math.max(bounds.sizeX, bounds.sizeZ) * 0.05,
     );
 
     // 4방향 엣지 vertex 수집 (정렬키 포함)

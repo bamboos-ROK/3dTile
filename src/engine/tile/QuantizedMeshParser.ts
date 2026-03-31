@@ -13,6 +13,8 @@
  *   + 엣지 인덱스, 확장(octvertexnormals 등) — 미사용
  */
 
+export const INT16_MAX = 32767;
+
 export interface ParsedQuantizedMesh {
   /** 수평 좌표, [0, 1] 정규화 (0=서쪽, 1=동쪽) */
   u: Float32Array;
@@ -31,7 +33,7 @@ export interface ParsedQuantizedMesh {
 
 /** zig-zag delta 디코딩 */
 function zigzagDecode(n: number): number {
-  return (n >> 1) ^ (-(n & 1));
+  return (n >> 1) ^ -(n & 1);
 }
 
 export function parseQuantizedMesh(buffer: ArrayBuffer): ParsedQuantizedMesh {
@@ -71,9 +73,9 @@ export function parseQuantizedMesh(buffer: ArrayBuffer): ParsedQuantizedMesh {
     uVal += zigzagDecode(uRaw[i]);
     vVal += zigzagDecode(vRaw[i]);
     hVal += zigzagDecode(hRaw[i]);
-    u[i] = uVal / 32767;
-    v[i] = vVal / 32767;
-    height[i] = hVal / 32767;
+    u[i] = uVal / INT16_MAX;
+    v[i] = vVal / INT16_MAX;
+    height[i] = hVal / INT16_MAX;
   }
 
   // 인덱스 데이터 — 이 서버는 4-byte 정렬 패딩 없이 vertex 데이터 직후에 시작
@@ -102,5 +104,14 @@ export function parseQuantizedMesh(buffer: ArrayBuffer): ParsedQuantizedMesh {
     if (code === 0) highest++;
   }
 
-  return { u, v, height, indices, minHeight, maxHeight, vertexCount, triangleCount };
+  return {
+    u,
+    v,
+    height,
+    indices,
+    minHeight,
+    maxHeight,
+    vertexCount,
+    triangleCount,
+  };
 }

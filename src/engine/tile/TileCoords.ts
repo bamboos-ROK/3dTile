@@ -38,7 +38,8 @@ export type TileBounds = {
   maxZ: number;
   centerX: number;
   centerZ: number;
-  size: number;
+  sizeX: number; // maxX - minX (경도 방향)
+  sizeZ: number; // maxZ - minZ (위도 방향, sizeX * 2)
   // Y축: 현재 Phase에서는 y=0 평면 기준 (DEM 연동 전)
 };
 
@@ -79,7 +80,8 @@ export function getTileBounds(x: number, y: number, z: number): TileBounds {
     maxZ,
     centerX: (minX + maxX) / 2,
     centerZ: (minZ + maxZ) / 2,
-    size: maxX - minX,
+    sizeX: maxX - minX,
+    sizeZ: maxZ - minZ,
   };
 }
 
