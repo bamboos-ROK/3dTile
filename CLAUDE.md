@@ -18,101 +18,88 @@ Tile/
 ├── CLAUDE.md
 ├── docs/                          ← 계획 문서 아카이브 (번호 순)
 ├── public/
-│   └── heightmap.png              ← 256×256 흑백 PNG
+│   └── heightmap.png              ← 256×256 흑백 PNG (legacy, 현재 미사용)
 └── src/
     ├── main.ts
     └── engine/
-        ├── camera/CameraController.ts
-        ├── heightmap/
-        │   └── HeightmapLoader.ts ← HeightmapData, loadHeightmap
-        ├── tiling/
-        │   ├── TilingScheme.ts    ← interface, TileBounds
-        │   └── LocalGridTiling.ts
-        ├── terrain/
-        │   ├── TerrainTile.ts     ← TileCoord, TileState, TerrainTile, CoarserBorders
-        │   ├── TerrainTileManager.ts
-        │   └── TerrainMeshBuilder.ts
-        ├── lod/LODSelector.ts
-        └── renderer/TerrainRenderer.ts
+        ├── constants.ts           ← 전역 상수 (LOD 임계값, 좌표, 위성 설정 등)
+        ├── camera/
+        │   └── CameraController.ts ← ArcRotateCamera + WASD/화살표 XZ 이동
+        ├── tile/                  ← 핵심 타일 시스템
+        │   ├── Tile.ts            ← TileState, Tile 타입, tileKey()
+        │   ├── TileCoords.ts      ← 좌표 변환 (World ↔ TMS z/x/y, Quadtree)
+        │   ├── TileManager.ts     ← 타일 캐시, LRU eviction, desired 동기화
+        │   ├── TerrainLoadQueue.ts ← 로드 큐 (우선순위, 동시 제한, starvation 방지)
+        │   ├── LODTraverser.ts    ← LOD 순회 (SSE 판정, Frustum cull, visibility)
+        │   ├── QuantizedMeshTileLoader.ts ← 지형 타일 로더 (fetch, parse, buildMesh)
+        │   ├── QuantizedMeshParser.ts     ← Cesium quantized-mesh 1.0 바이너리 파싱
+        │   ├── SatelliteTextureBuilder.ts ← 위성 타일 합성, crop, 이중 캐시
+        │   ├── SatelliteFetchQueue.ts     ← HTTP fetch 동시성 제한 (maxConcurrent=6)
+        │   ├── SatelliteProjection.ts     ← EPSG:4326 TMS ↔ Web Mercator XYZ 변환
+        │   └── DebugTileMesh.ts   ← 로드 실패 시 디버그 대체 메시 (와이어프레임)
+        └── legacy/                ← 구형 heightmap 기반 구현 (미사용)
 ```
 
 ## 핵심 아키텍처 결정
 
-### LOD 레벨 (4단계)
+### LOD 시스템 (SSE 기반 Quadtree)
 
-| Level | 타일 수 | Heightmap 샘플 영역 |
-| ----- | ------- | ------------------- |
-| 0     | 1       | 256×256 px          |
-| 1     | 4       | 128×128 px          |
-| 2     | 16      | 64×64 px            |
-| 3     | 64      | 32×32 px            |
-| 4     | 256     | 16×16 px            |
+- Quadtree 무제한 순회, 최대 레벨: `MAX_LOD_LEVEL = 15`
+- Screen Space Error로 split/merge 판정: `screenError = (geometricError × projFactor) / effectiveDepth`
+- Hysteresis로 thrashing 방지: `SPLIT_THRESHOLD = 150`, `MERGE_THRESHOLD = 100`
+- 루트 타일: `GEO_ROOT_Z=9`, `GEO_ROOT_X=873`, `GEO_ROOT_Y=362` (한반도)
+- 카메라 중심 3×3 루트 그리드에서 순회 시작
 
-- LOD 전환 임계값: Level 0→1: 400, 1→2: 200, 2→3: 100, 3→4: 50 (camera distance)
+### 지형 데이터 스펙
 
-### Heightmap 스펙
+- 포맷: **Cesium Quantized Mesh 1.0** (바이너리, 서버 fetch)
+- 좌표계: EPSG:4326 TMS (Y=0=남쪽, `tilesX=2^(z+1)`, `tilesY=2^z`)
+- World 크기: `TERRAIN_SIZE = 512` units, `HEIGHT_SCALE = 320`
+- Skirt geometry: LOD 경계 seam 은폐용 "치마" 폴리곤
 
-- 해상도: 256×256 px, 흑백 PNG
-- 위치: `public/heightmap.png`
-- 로드 방식: Canvas 2D API (`getImageData`)
-- 높이 계산: `height = pixelValue / 255 * heightScale` (heightScale = 255)
+### 위성 텍스처 스펙
 
-### Tile 스펙
-
-- Mesh 해상도: 32×32 vertices (31×31 cells × 2 triangles)
-- Bounding Box: AABB
-- Tile 공간: Local Grid (정규화 좌표 [0,1] → world 좌표)
-
-### World 좌표 스펙
-
-- Terrain 크기: **512 × 512 units** (world space)
-- heightmap 1px = 2 world units (256px × 2 = 512)
-
-### Frustum Culling
-
-Babylon.js 내장 API 사용:
-
-- `Frustum.GetPlanes(transformMatrix)`
-- `BoundingBox.IsInFrustum(frustumPlanes)`
+- 좌표계: Web Mercator XYZ (Y=0=북쪽, Mercator 투영)
+- 합성: `SatelliteTextureBuilder` — OffscreenCanvas에 위성 타일 배치 후 terrain 범위로 crop
+- LOD 범위: `SAT_Z_MIN=12`, `SAT_Z_MAX=18`
 
 ### Tile Lifecycle
 
 ```
-Created → Loading → Active ↔ Visible → Disposed
+idle → queued → loading → ready ↔ cached → disposed
+```
+
+- `ready`: 메시 준비 완료, 렌더링 가능
+- `cached`: 메시 보존, 렌더링 비활성 (LRU 관리 대상)
+- `CACHE_LIMIT = 64` (LRU 한도)
+
+### Frustum Culling
+
+Custom 구현 (`LODTraverser.ts`):
+
+```
+dist > bounds.size × 1.5 && dot(toTile.normalize(), forward) < -0.3 → skip
 ```
 
 ### Camera 조작
 
-`UniversalCamera` 기반. 초기 위치 `(-100, 800, 300)` — 지형 바깥에서 비스듬히 내려다보는 시점.
+`ArcRotateCamera` 기반. 초기 위치: alpha=1.7π, beta=0.3π, radius=800.
 
-| 입력               | 동작                      |
-| ------------------ | ------------------------- |
-| W / ↑              | 앞으로 이동               |
-| S / ↓              | 뒤로 이동                 |
-| A / ←              | 왼쪽으로 이동             |
-| D / →              | 오른쪽으로 이동           |
-| 마우스 클릭+드래그 | 시선 방향 변경            |
-| 마우스 휠 위       | 카메라 고도 감소 (줌인)   |
-| 마우스 휠 아래     | 카메라 고도 증가 (줌아웃) |
+| 입력 | 동작 |
+| --- | --- |
+| 화살표 ↑↓←→ | XZ 수평 이동 (메인 카메라) |
+| W/A/S/D | XZ 수평 이동 (디버그 카메라) |
+| 마우스 드래그 | 카메라 회전 (alpha/beta) |
+| 마우스 휠 | radius 줌 (10~5000) |
+| F 키 | 메인 ↔ 디버그 카메라 전환 |
 
-- 이동 속도: `camera.speed = 5`
-- 휠 고도 최솟값: Y = 20
-- `attachControl(canvas, true)` — Babylon.js 기본 입력 사용 (줌/궤도 없음)
+- 이동 속도: `MOVE_SPEED = 200` units/sec
+- beta 범위: `[0, π/2 - 0.05]`, radius 범위: `[10, 5000]`
 
 ### Babylon Inspector
 
 - **상시 활성화** — 연습용 데모이므로 항상 켜둠
 - `scene.debugLayer.show({ embedMode: true })` main.ts에서 호출
-
-### Heightmap 전제
-
-- `public/heightmap.png`는 **반드시 존재**한다고 가정
-- 폴백(절차적 생성 등) 없음
-
-### Wireframe
-
-- 기본값: **solid**
-- Inspector에서 필요 시 전환
 
 ## 코드 컨벤션
 
@@ -127,27 +114,6 @@ Created → Loading → Active ↔ Visible → Disposed
 npm run dev      # 개발 서버 실행 (http://localhost:3000)
 npm run build    # 프로덕션 빌드
 ```
-
-## 현재 구현 상태
-
-> 세션 재개 시 이 체크리스트를 기준으로 다음 Step을 파악한다.
-> Step 완료 시 Claude가 즉시 업데이트한다.
-
-- [x] Step 1 — 프로젝트 셋업 (`package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `.gitignore`, `git init`)
-- [x] Step 2 — 공통 타입 정의 (`TerrainTile.ts`)
-- [x] Step 3 — TilingScheme + LocalGridTiling
-- [x] Step 4 — TerrainMeshBuilder (heightmap → mesh)
-- [x] Step 5 — LODSelector
-- [x] Step 6 — CameraController
-- [x] Step 7 — TerrainTileManager
-- [x] Step 8 — TerrainRenderer (Quadtree Traversal)
-- [x] Step 9 — main.ts 진입점 + npm install + 동작 확인
-- [x] Step 10 — 타일 seam 수정 (Heightmap 법선 + Skirt geometry)
-- [x] Step 11 — 디버그 카메라 (DebugCameraOverlay: F키 전환, LOD 색상 시각화)
-- [x] Step 12 — Tile System 리팩토링 (z/x/y 좌표계, TileManager, TileCoords, 기존 코드 legacy/ 격리)
-- [x] Step 13 — LODTraverser (SSE 기반 quadtree 순회, debug ground plane 연동)
-
----
 
 ## 세션 연속성 규칙
 
@@ -218,5 +184,6 @@ ls -R src/
 - `29_satellite-texture.md` — 위성 이미지 텍스처 시스템 (좌표계 변환, crop 로직, Blob 캐시, drawImage 크기 버그 수정)
 - `30_fetch-performance.md` — 위성 Fetch 성능 개선 (SAT_Z_OFFSET 조정, TileFetchQueue AbortSignal, cancelComposite, progressive rendering, tile 단위 generation)
 - `31_lod-traverser-refactor.md` — LODTraverser 리팩토링 (Priority Queue, LRU Cache, Hysteresis, Frustum Cull, Parent Fallback, TileLoadQueue 신규)
+- `32_code-guide.md` — 코드 설명 문서 (전체 구조, 파일별 역할, 핵심 로직, 구현 의도, 상수 참조표, 디버깅)
 
 새 계획 수립 시 `NN_제목.md` 형식으로 추가.
